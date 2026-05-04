@@ -106,6 +106,16 @@ Review the git diff. If the changes introduce new features, patterns, or convent
 
 **Versioned docs:** Always bump VERSION and DATE when editing.
 
+## Step 3.5: Sweep Smoke-Test Catalog
+
+If `docs/smoke-tests-pending.md` exists:
+
+1. Read it. Look for sections where every test is `Passed (YYYY-MM-DD)` — collapse those sections in this commit to a one-liner (e.g., `Phase 2 — all 5 tests passed 2026-05-15. See git history for detail.`). Don't batch this across releases; do it now.
+2. Check if the diff introduces behavior that needs new manual verification (UI flows, OAuth, payments, third-party webhooks, migrations, browser-specific bugs, race conditions). If so, propose new entries to add — assign stable IDs following the `<SECTION>-<NUMBER>` or `<SECTION>-<TYPE><NUMBER>` convention, do NOT reuse retired IDs.
+3. If any test in the diff's scope is currently in `Failed` status, STOP and report — do not ship until the failing test is resolved or explicitly deferred.
+
+If the file does not exist, skip this step (project hasn't adopted the catalog yet).
+
 ## Step 4: Stage Changes
 
 Stage all modified files:

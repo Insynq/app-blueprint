@@ -231,7 +231,8 @@ If the build fails:
 - [ ] Run `/db-push` if migrations were created (Supabase projects)
 - [ ] Deploy edge functions if modified: `npx supabase functions deploy [name]`
 - [ ] Run `/gen-test` for new hooks/components
-- [ ] Manual testing per the plan's verification checklist
+- [ ] Add manual smoke tests to `docs/smoke-tests-pending.md` for any UI flow, third-party integration, OAuth path, payment, webhook, or migration this batch introduced (anything automated tests don't cover). Use stable IDs — `<SECTION>-<NUMBER>` or `<SECTION>-<TYPE><NUMBER>`. Skip if the file does not exist in this project.
+- [ ] Manual testing per the plan's verification checklist (cross-reference the smoke-test IDs you added)
 ```
 
 ## Important Instructions

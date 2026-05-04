@@ -1,0 +1,52 @@
+# Smoke test reminder — warn-only.
+#
+# Posts a CI warning if a PR changes high-risk paths but does NOT update
+# docs/smoke-tests-pending.md. Intent: nudge the author to confirm whether
+# new manual tests are needed. It does NOT block merge.
+#
+# Setup for derived projects:
+#   1. Replace the HIGH_RISK_PATHS regex below with paths that are actually
+#      risky in your codebase. Common candidates:
+#        - supabase/functions/         (edge functions)
+#        - supabase/migrations/        (DB schema)
+#        - src/payments/, src/billing/ (Stripe / payments)
+#        - src/auth/                   (auth flows)
+#        - src/integrations/           (third-party webhooks / OAuth)
+#   2. Leave it warn-only until the team is in the habit of updating the
+#      catalog. Promote to blocking by changing `::warning::` to `::error::`
+#      and adding `exit 1`.
+#   3. Delete this file if you don't want the nudge.
+
+name: Smoke test reminder
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check whether smoke-test catalog needs an update
+        env:
+          # EDIT_ME — extended-regex of paths that are risky in your codebase.
+          HIGH_RISK_PATHS: '^(supabase/functions/|supabase/migrations/|src/payments/|src/auth/|src/integrations/)'
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD)
+          HIGH_RISK=$(echo "$CHANGED" | grep -E "$HIGH_RISK_PATHS" || true)
+          CATALOG_TOUCHED=$(echo "$CHANGED" | grep -F 'docs/smoke-tests-pending.md' || true)
+
+          if [ -n "$HIGH_RISK" ] && [ -z "$CATALOG_TOUCHED" ]; then
+            echo "::warning title=Smoke tests::High-risk paths changed but docs/smoke-tests-pending.md was not updated. Confirm whether new smoke tests are needed; if not, tick the 'No new manual tests needed' box in the PR description."
+            echo ""
+            echo "High-risk paths in this PR:"
+            echo "$HIGH_RISK"
+          else
+            echo "OK — either no high-risk paths changed, or the catalog was updated."
+          fi

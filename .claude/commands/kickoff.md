@@ -22,6 +22,8 @@ description: Guided discovery session — defines your app concept, scope, and a
 | `.claude/memory/project_concept.md` | Project concept seed for future sessions |
 | `.claude/memory/project_preferences.md` | Working style seed for future sessions |
 
+The template also ships `docs/smoke-tests-pending.md` (empty catalog for tracking outstanding manual smoke tests with stable IDs) and `.github/pull_request_template.md`. You don't need to edit these during kickoff — the catalog is filled in as you ship features that need manual verification.
+
 ## Why Discovery Before Code
 
 The most expensive mistakes happen when you build the wrong thing with confidence. This session is designed to:
@@ -285,12 +287,16 @@ Examples:
 - `KB_1_Architecture.md`: Architecture decisions and data model
 - `KB_7_UI_Patterns.md`: UI patterns and component conventions
 - `KB_8_Current_State.md`: Current phase and active tracking
+- `smoke-tests-pending.md`: **Single source of truth** for outstanding manual smoke tests with stable IDs. When asked about ship-readiness or "what's left to verify," point here — do not re-list tests in commits, PRs, or chat.
 
 **Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
 - `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.
 - `docs/UI:UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
 - `docs/Auth KBs/AUTH_KB_00_Index.md` — consult for login methods, custom JWT claims, MFA, session lifecycle, signup provisioning, or account management.
 - `docs/Job KBs/JOB_KB_00_Index.md` — consult for outbox processing, scheduled jobs (pg_cron / Vercel Cron), queue tables, or long-running tasks (Trigger.dev / Inngest).
+
+**Manual verification:**
+- `docs/smoke-tests-pending.md` — single source of truth for outstanding manual smoke tests (stable IDs). When asked about ship-readiness or "what's left to verify," point here; do not re-list tests in commits or PRs.
 
 ## Current Phase
 Phase 1 — [Name TBD] (Not Started)

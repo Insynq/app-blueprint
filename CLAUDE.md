@@ -33,6 +33,7 @@
 - `KB_9_Screen_Catalog.md`: Inventory of every screen, modal, and dialog — check before building new UI surfaces
 - `CHANGELOG.md`: Running log of what was shipped and when — maintained by `/ship`
 - `LESSONS.md`: Running log of gotchas and hard-won lessons — read before debugging or implementing in unfamiliar areas
+- `smoke-tests-pending.md`: **Single source of truth** for outstanding manual smoke tests with stable IDs. When asked about ship-readiness or "what's left to verify," point here — do not re-list tests in commits, PRs, or chat. Add new tests when shipping behavior automated coverage misses; collapse passed sections to one-liners after each release.
 
 **Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
 - `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.
