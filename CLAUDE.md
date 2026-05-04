@@ -23,7 +23,8 @@
 [TODO — main domain concepts the app manages, not table names yet]
 
 ## Reference Documents
-See `/docs` folder:
+
+**Project state** (populated during development) — see `/docs` folder:
 - `APP_CONCEPT.md`: Problem statement, users, use cases, success criteria
 - `SCOPE.md`: V1 scope, out-of-scope, known unknowns
 - `KB_1_Architecture.md`: Architecture decisions and data model
@@ -33,7 +34,11 @@ See `/docs` folder:
 - `CHANGELOG.md`: Running log of what was shipped and when — maintained by `/ship`
 - `LESSONS.md`: Running log of gotchas and hard-won lessons — read before debugging or implementing in unfamiliar areas
 
-> **Note on KB numbering:** KB_1, KB_7, KB_8, KB_9 are template-provided. Numbers 2–6 are reserved for project-specific knowledge bases added during kickoff (architecture decisions, API contracts, data model, etc.).
+**Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
+- `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.
+- `docs/UI:UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
+
+> **Note on KB numbering:** KB_1, KB_7, KB_8, KB_9 are template-provided. Numbers 2–6 are reserved for project-specific knowledge bases added during kickoff (architecture decisions, API contracts, data model, etc.). The `SB_KB_*` and `UI_KB_*` files in their own folders are stack-reference patterns and are separate from the project-state KBs.
 
 ## Current Phase
 [TODO — Phase 1: Not Started]

@@ -278,12 +278,17 @@ Examples:
 - **Vendors** — service providers who fulfill orders
 
 ## Reference Documents
-See `/docs` folder:
+
+**Project state** (populated during development) — see `/docs` folder:
 - `APP_CONCEPT.md`: Problem statement, users, use cases, success criteria
 - `SCOPE.md`: V1 scope, out-of-scope, known unknowns
 - `KB_1_Architecture.md`: Architecture decisions and data model
 - `KB_7_UI_Patterns.md`: UI patterns and component conventions
 - `KB_8_Current_State.md`: Current phase and active tracking
+
+**Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
+- `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.
+- `docs/UI:UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
 
 ## Current Phase
 Phase 1 — [Name TBD] (Not Started)

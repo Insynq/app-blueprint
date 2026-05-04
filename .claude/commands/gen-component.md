@@ -24,6 +24,8 @@ Read `CLAUDE.md` to understand:
 - Role/permission model (if components need to be role-aware)
 - Any established component patterns
 
+Also consult `docs/UI:UX KBs/UI_KB_0_Index.md` and read only the UI_KB files relevant to the component being built (e.g., `UI_KB_1_DesignTokens.md` for any new visual surface, `UI_KB_10_Accessibility.md` for interactive components, `UI_KB_12_CommonMistakes.md` before generating).
+
 ### Step 2: Check the Catalog
 
 Read `docs/KB_7_UI_Patterns.md` — specifically Parts 2 (Component Catalog) and 3 (Hook Catalog).

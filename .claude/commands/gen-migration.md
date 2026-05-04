@@ -24,6 +24,8 @@ Read `CLAUDE.md` to understand:
 
 Also read `docs/LESSONS.md` if it exists — skim for DB-category entries (`[DB-*]`) before writing the migration. Full-table constraint audits and schema verification requirements are documented there.
 
+If the project uses Supabase or Postgres, consult `docs/Supabase Structure KBs/SB_KB_00_Index.md` and read only the SB_KB files relevant to this migration (e.g., `SB_KB_1_Multi_Org_RLS.md` for tenancy, `SB_KB_12_RLS_Performance.md` for InitPlan idiom and indexing requirements).
+
 ### Step 2: Read Existing Migrations
 
 Find 2–3 recent migration files similar in scope. Read them to understand:

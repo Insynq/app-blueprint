@@ -36,6 +36,8 @@ Read `CLAUDE.md` to understand:
 - Any project-specific RLS helper functions
 - Which tables are designated as immutable audit logs
 
+Also read `docs/Supabase Structure KBs/SB_KB_12_RLS_Performance.md` — it's the canonical anti-pattern list (naked `auth.uid()`, missing indexes on USING-clause columns, IMMUTABLE on table-reading functions, multiple permissive policies, recursion through membership tables, etc.). Validate every finding against the patterns documented there.
+
 ## Audit Process
 
 ### 1. Scan Migrations Directory
