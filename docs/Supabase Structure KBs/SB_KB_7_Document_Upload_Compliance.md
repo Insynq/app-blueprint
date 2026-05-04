@@ -237,8 +237,8 @@ async function processPendingDocuments() {
 
 **`storage.foldername(name)[N]` is 1-indexed.** Folder `[1]` is the first segment of the path. Off-by-one in RLS path checks silently passes all uploads to the wrong org folder.
 
-**SHA-256 must be computed before upload, not after.** Storage does not expose a hash API. Compute in the browser (`crypto.subtle.digest`) or server-side on the upload stream before writing to storage.
+**SHA-256 must be computed on the client before requesting the signed upload URL.** Storage does not expose a hash API. Compute in the browser (`crypto.subtle.digest`) and send the hash with the metadata request, or compute server-side on the upload stream before writing to storage. Storing the hash at upload time is the only way to later verify integrity — there's no retroactive hashing path.
 
-**Supersession is append-only.** When a user uploads a replacement document, insert a new row with `supersedes_id = old_doc_id` and update the old row's `document_status = 'superseded'`. Never delete the old storage object — it's the audit record. If storage cost is a concern, move superseded files to a cold-storage bucket rather than deleting.
+**Supersession is append-only and requires a distinct storage path per version.** When a user uploads a replacement document, insert a new row with `supersedes_id = old_doc_id` and update the old row's `document_status = 'superseded'`. Every upload must use a unique `storage_path` (include version or timestamp in the path) — never use `x-upsert: true` on compliance documents, since it overwrites in place and destroys the prior version. Never delete the old storage object — it's the audit record. If storage cost is a concern, move superseded files to a cold-storage bucket rather than deleting.
 
 **Regulator audit access.** Create a separate read-only admin role that can see all documents for all orgs (service role on a restricted endpoint) and logs every access with `action = 'audit_read'`. Never give regulators direct Supabase credentials.

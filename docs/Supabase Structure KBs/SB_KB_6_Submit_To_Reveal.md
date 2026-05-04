@@ -77,7 +77,7 @@ create or replace function submit_admin_session(
 )
 returns admin_sessions
 language plpgsql
-security invoker  -- runs as caller; RLS applies
+security invoker  -- runs as caller; RLS still gates row visibility within the function (no bypass)
 as $$
 declare
   v_session admin_sessions;
@@ -165,6 +165,8 @@ create index on outbox (processed_at, created_at) where processed_at is null;
 -- (enforce via policy or application convention)
 
 -- Broadcast trigger: fires AFTER commit via WAL (Supabase Realtime)
+-- NOTE: realtime.broadcast_changes() is Supabase-specific. For non-Supabase
+-- Postgres, replace with pg_notify() or push to a queue worker.
 create or replace function broadcast_session_state_change()
 returns trigger
 security definer language plpgsql as $$
@@ -238,5 +240,7 @@ $$;
 **Outbox worker must be idempotent.** The outbox pattern guarantees at-least-once delivery. Your Resend email send, Supabase Broadcast call, and webhook dispatch must all handle duplicate delivery gracefully. Use Resend's `Idempotency-Key` header keyed on `outbox.id`.
 
 **Don't emit from `BEFORE UPDATE`.** Postgres WAL-based Realtime reads the committed state. A `BEFORE UPDATE` trigger may emit a notification referencing state that was rolled back. Always use `AFTER UPDATE` or `AFTER INSERT` triggers for notifications.
+
+**Broadcast trigger failure is asymmetric — DB commits, notification doesn't.** `AFTER` triggers run after the row is committed. If `realtime.broadcast_changes()` (or any external call) fails, the state transition is already durable but no event ever fires. Clients must refetch on visibility/focus or on stale-data heuristics — never rely on Realtime alone for correctness. The outbox + worker path (steps 3 and 4 above) is the durable channel; broadcast is an optimization for instant UI updates.
 
 **The partial unique index on `one_active_session_per_subject` (from SB_KB_5) doesn't prevent a second row from being inserted while a transaction is open on the first.** The `SELECT FOR UPDATE` in `submit_admin_session` handles this for the submit path. For session creation, use `INSERT ... ON CONFLICT DO NOTHING` and check the returned row count.

@@ -207,7 +207,7 @@ using (
 
 **`AFTER UPDATE` trigger for Realtime notifications, never `BEFORE UPDATE`.** Realtime Broadcast reads WAL post-commit. A `BEFORE UPDATE` trigger that emits a notification may fire before the commit lands, causing subscribers to refetch and see stale data.
 
-**Partial unique index on `(subject_id) where state in ('draft','in_progress')` doesn't prevent a second draft from being created while one is being submitted.** Add a `SELECT ... FOR UPDATE` on the session row at the start of any state transition function to serialize concurrent operations.
+**Partial unique index on `(subject_id) where state in ('draft','in_progress')` doesn't prevent a second draft from being created while one is being submitted.** Add a `SELECT ... FOR UPDATE` on the session row at the start of any state transition function to serialize concurrent operations. See `submit_admin_session` in SB_KB_6 for the full pattern.
 
 **Admin org scoping.** Decide: can admin A from Org A see sessions created by admin B from Org A? Typically yes (org-level visibility for admins). Add a policy: `org_id = any(array(select private.get_my_org_ids()))` for admins with the `admin` role.
 
