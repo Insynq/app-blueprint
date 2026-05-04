@@ -37,6 +37,7 @@
 **Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
 - `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.
 - `docs/UI:UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
+- `docs/Auth KBs/AUTH_KB_00_Index.md` — consult for login methods, custom JWT claims, MFA, session lifecycle, signup provisioning, or account management.
 
 > **Note on KB numbering:** KB_1, KB_7, KB_8, KB_9 are template-provided. Numbers 2–6 are reserved for project-specific knowledge bases added during kickoff (architecture decisions, API contracts, data model, etc.). The `SB_KB_*` and `UI_KB_*` files in their own folders are stack-reference patterns and are separate from the project-state KBs.
 
@@ -64,6 +65,7 @@ All commands live in `.claude/commands/`. Run `/kickoff` first on any new projec
 | Command | Purpose |
 |---------|---------|
 | `/brainstorm` | Deep codebase research before committing to an approach |
+| `/research` | Deep web research with synthesized report saved to `.research/` |
 | `/investigate` | Deep exploration — trace data flow, find all usages |
 | `/plan` | Create an implementation plan from investigation findings |
 | `/plan-review` | Gap analysis on a spec doc before implementing |
@@ -84,11 +86,16 @@ All commands live in `.claude/commands/`. Run `/kickoff` first on any new projec
 | `/audit-rls` | Scan DB access policies for security gaps (SQL databases) |
 | `/audit-infra` | Audit infrastructure — headers, dependencies, environment, CORS |
 
+### Database
+| Command | Purpose |
+|---------|---------|
+| `/gen-migration` | Generate database migrations (SQL databases) |
+| `/db-push` | Validate (dry-run + RLS audit), push, and regen types for a migration |
+
 ### Generators
 | Command | Purpose |
 |---------|---------|
 | `/gen-test` | Generate tests following project patterns |
-| `/gen-migration` | Generate database migrations (SQL databases) |
 | `/gen-component` | Generate UI components |
 | `/visualize` | Generate ASCII diagrams |
 | `/update-kb` | Update knowledge base documents |
