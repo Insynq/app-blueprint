@@ -40,6 +40,7 @@
 - `docs/UI:UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
 - `docs/Auth KBs/AUTH_KB_00_Index.md` — consult for login methods, custom JWT claims, MFA, session lifecycle, signup provisioning, or account management.
 - `docs/Job KBs/JOB_KB_00_Index.md` — consult for outbox processing, scheduled jobs (pg_cron / Vercel Cron), queue tables, or long-running tasks (Trigger.dev / Inngest).
+- `docs/Test KBs/TEST_KB_00_Index.md` — consult for test strategy, RLS testing with pgTAP, JS integration tests, component tests with MSW, Playwright E2E, or testing async patterns (Realtime, outbox, scheduled jobs).
 
 > **Note on KB numbering:** KB_1, KB_7, KB_8, KB_9 are template-provided. Numbers 2–6 are reserved for project-specific knowledge bases added during kickoff (architecture decisions, API contracts, data model, etc.). The `SB_KB_*` and `UI_KB_*` files in their own folders are stack-reference patterns and are separate from the project-state KBs.
 

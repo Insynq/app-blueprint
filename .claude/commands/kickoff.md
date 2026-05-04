@@ -294,6 +294,7 @@ Examples:
 - `docs/UI:UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
 - `docs/Auth KBs/AUTH_KB_00_Index.md` — consult for login methods, custom JWT claims, MFA, session lifecycle, signup provisioning, or account management.
 - `docs/Job KBs/JOB_KB_00_Index.md` — consult for outbox processing, scheduled jobs (pg_cron / Vercel Cron), queue tables, or long-running tasks (Trigger.dev / Inngest).
+- `docs/Test KBs/TEST_KB_00_Index.md` — consult for test strategy, RLS testing with pgTAP, JS integration tests, component tests with MSW, Playwright E2E, or testing async patterns (Realtime, outbox, scheduled jobs).
 
 **Manual verification:**
 - `docs/smoke-tests-pending.md` — single source of truth for outstanding manual smoke tests (stable IDs). When asked about ship-readiness or "what's left to verify," point here; do not re-list tests in commits or PRs.
