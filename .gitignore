@@ -38,3 +38,6 @@ yarn-error.log*
 .claude/settings.local.json
 .claude/worktrees/
 .claude/plans/
+
+# Audit output (ephemeral working docs, not part of the template)
+audits/
