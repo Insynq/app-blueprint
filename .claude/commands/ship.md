@@ -1,17 +1,17 @@
 ---
-description: Update KBs, commit changes, and push to remote
+description: Update project docs, commit changes, and push to remote
 arguments:
   - name: message
     description: Commit message describing the changes
     required: true
   - name: phase
-    description: Phase completed (e.g., "1.2") - triggers KB update if provided
+    description: Phase or milestone completed (e.g., "6.5", "v2", "auth-refactor") - triggers doc status updates
     required: false
 ---
 
 # Ship Orchestrator
 
-**This command spawns a general-purpose subagent that updates documentation, commits, and pushes.**
+**This skill spawns a general-purpose subagent that updates documentation, commits, and pushes.**
 
 ## Action Required
 
@@ -29,9 +29,9 @@ Commit Message: **$ARGUMENTS.message**
 
 ## Your Role
 
-You will:
-1. Review what's changed
-2. Update knowledge base documents (if phase provided)
+You are a shipping orchestrator. You will:
+1. Review what's being shipped
+2. Update project documentation to reflect the work
 3. Stage and commit all changes
 4. Push to remote
 
@@ -39,91 +39,94 @@ You have access to: Read, Edit, Write, Bash, Glob, Grep tools.
 
 ## Step 1: Review Changes
 
+Run these to understand what's being shipped:
 ```bash
 git status
 git diff --stat
+git log --oneline -5
 ```
 
 If there are no changes to commit, STOP and report "Nothing to ship — working tree clean."
 
-### Detect Deployment Needs
-Read `CLAUDE.md` to understand the project's deployment stack. Then check:
+## Step 2: Discover Project Documentation
 
-```bash
-# Check for uncommitted migration files
-find . -name "*.sql" -newer .git/index 2>/dev/null | grep -v .git
+Read the project context to understand the doc structure:
 
-# Check for changed server-side functions
-git diff --name-only | grep -E "(functions|api|server)" | head -10
+1. Read `CLAUDE.md` — look for:
+   - References to KB or doc files (e.g., "See `/docs` folder:", file paths)
+   - Current phase status section
+   - Documentation conventions or maintenance rules
+
+2. Glob for docs: `docs/**/*.md` — list all doc files
+
+3. Identify the docs most likely to need updating based on the git diff:
+   - **Current state / session tracking** — most frequently updated doc
+   - **Planning or phase docs** — if a phase was completed
+   - **CLAUDE.md itself** — if phase status needs updating
+
+If no `docs/` folder exists, check for `README.md` or `.claude/*.md` files.
+
+## Step 3: Update Documentation
+
+### If phase argument is provided
+
+Phase **$ARGUMENTS.phase** is complete. Find and update:
+
+1. **CLAUDE.md** — Mark phase $ARGUMENTS.phase as ✅ complete. Update "Current Phase" or equivalent section to advance to the next item.
+
+2. **Current state doc** — The doc that tracks active work (highest-traffic KB, STATUS.md, etc.).
+   Add a one-liner completion entry and clear any resolved session notes for this phase.
+
+3. **Planning doc for this phase** — If found, collapse the completed phase details to a 2-3 line summary:
+   - What was built
+   - Key deviations from plan (if any)
+   - Reference git history for full details
+
+### Always (regardless of phase argument)
+
+Review the git diff. If the changes introduce new features, patterns, or conventions not yet reflected in docs:
+- Add a one-liner changelog entry to the relevant docs
+- Update any "Recent Additions" or equivalent section in CLAUDE.md if significant enough
+
+### Documentation conventions to apply
+
+**Status emojis:** ✅ Complete | ⏳ In Progress / Next | 📋 Deferred
+
+**Changelog format** — one-liner entries only:
+```
+| Version | Date | Changes |
+| v2.5 | 2026-02-04 | Phase 6.5 complete - Stripe integration |
 ```
 
-If deployment artifacts were changed, note this in the final output as a **deployment reminder**.
-
-## Step 2: Update KBs (if phase provided)
-
-{{#if phase}}
-Phase $ARGUMENTS.phase is complete. Update these files:
-
-### CLAUDE.md
-- Mark phase $ARGUMENTS.phase as ✅ complete
-- Update "Current Phase" section if needed
-
-### docs/KB_8_Current_State.md
-- Add one-liner changelog entry for phase completion
-- Clear any resolved session notes
-
-### Relevant planning KBs
-- Collapse completed phase details to 2–3 line summary
-{{/if}}
-
-{{#unless phase}}
-No phase specified — skip KB updates.
-{{/unless}}
-
-## Step 2.5: Update Changelog
-
-If `docs/CHANGELOG.md` exists, prepend a new entry at the top (after the header comment, before any existing entries).
-
-Get today's date:
-```bash
-date +%Y-%m-%d
+**Collapsed phase format:**
+```
+### Phase X.Y — Name
+[What was built in 1-2 sentences]. [Key deviation if any.]
 ```
 
-Use `git diff --stat` and the commit message to write 2–4 specific bullets. Lead each with an action verb (Added, Fixed, Removed, Replaced, Extended).
+**Versioned docs:** Always bump VERSION and DATE when editing.
 
-Entry format:
-```markdown
-## YYYY-MM-DD{{#if phase}} — Phase $ARGUMENTS.phase:{{/if}} $ARGUMENTS.message
-- [Specific thing that changed]
-- [Another specific thing]
-```
+## Step 4: Stage Changes
 
-Example of good bullets: "Added `useCartIntakeForms` hook for pre-checkout form fetching", "Fixed scroll event blocked by modal overlay"
-Example of bad bullets: "Improved performance", "Various bug fixes"
-
-If `docs/CHANGELOG.md` does not exist, note in the final output: "CHANGELOG.md not found — run `/changelog` to initialize it from git history, then re-run `/ship`." Do not skip silently.
-
-## Step 2.6: Update Screen Catalog (if screens were added)
-
-If new screens, pages, or modals were built in this commit:
-- Open `docs/KB_9_Screen_Catalog.md`
-- Add an entry for each new screen following the format in that file's header
-- If KB_9_Screen_Catalog.md does not exist, skip this step
-
-## Step 3: Stage and Commit
-
+Stage all modified files:
 ```bash
 git add -A
+```
+
+Review what's staged:
+```bash
 git diff --cached --stat
 ```
+
+## Step 5: Commit
 
 ```bash
 git commit -m "$ARGUMENTS.message
 
-Co-Authored-By: Claude <noreply@anthropic.com>"
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ```
 
-## Step 4: Push
+## Step 6: Push
 
 ```bash
 git push
@@ -134,39 +137,43 @@ If push fails due to upstream changes:
 git pull --rebase && git push
 ```
 
-## Step 5: Final Output
+If push fails for any other reason, report the error and STOP — do not force push.
+
+## Step 7: Final Output
 
 ```markdown
 ## Ship Complete
 
 ### Changes Shipped
-[Summary from git diff --stat]
+[git diff --stat summary]
 
-### KB Updates
-[What was updated, or "None — no phase specified"]
+### Documentation Updated
+- [File]: [what changed]
+- [File]: [what changed]
+(or "No doc updates needed")
 
 ### Commit
 **Hash:** [short hash]
 **Message:** $ARGUMENTS.message
 
-### Deployment Needed?
-[List any migration files, server functions, or deployment artifacts that were changed]
-[Or: "No deployment artifacts changed"]
+### Push
+[Success + remote URL, or error details]
 ```
 
-## Important
+## Important Instructions
 
-1. Always verify there are changes before committing
-2. Use the exact commit message provided — don't modify it
-3. Always include Co-Authored-By
-4. If push fails, try rebase before escalating
-5. Don't force push
+1. **Don't skip git status** — always verify there are changes first
+2. **Update docs before staging** — doc changes should be part of the same commit
+3. **Use the exact commit message provided** — don't modify it
+4. **Always include Co-Authored-By** — required for all commits
+5. **Never force push** — if push fails after pull --rebase, report and stop
+6. **Report failures clearly** — if any step fails, stop and explain
 ```
 
 ---
 
 ## After Orchestrator Returns
 
-1. **Nothing to commit** → no action needed
-2. **Push failed** → resolve conflicts manually
-3. **Deployment needed** → follow project-specific deployment steps
+1. **Nothing to commit** → No action needed
+2. **Push failed** → May need to resolve conflicts manually
+3. **Doc update failed** → Run `/update-kb` manually, then commit and push

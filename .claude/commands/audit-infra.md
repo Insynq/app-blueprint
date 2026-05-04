@@ -1,5 +1,5 @@
 ---
-description: Audit infrastructure security — headers, dependencies, env vars, storage, deployment config
+description: Audit infrastructure security - headers, dependencies, env vars, storage, deployment config
 arguments:
   - name: focus
     description: Focus area - "headers", "deps", "env", "storage", or "all" (default)
@@ -8,11 +8,11 @@ arguments:
 
 # Infrastructure Security Audit Subagent
 
-**IMPORTANT: This command spawns a subagent to protect main context.**
+**IMPORTANT: This skill spawns a subagent to protect main context.**
 
 ## Action Required
 
-Spawn a Task with `subagent_type: Explore` using the prompt below.
+Spawn a Task with `subagent_type: Explore` using the prompt below. The subagent will scan infrastructure configuration and return a security report.
 
 ---
 
@@ -23,129 +23,202 @@ Spawn a Task with `subagent_type: Explore` using the prompt below.
 
 {{#if focus}}Focus: **$ARGUMENTS.focus**{{/if}}
 
-## Step 0: Read Project Context
+## Core Question
 
-Read `CLAUDE.md` to understand:
-- Tech stack (hosting platform, backend, frontend framework)
-- Deployment configuration files
-- Services in use (payments, email, storage, auth)
+> "Does this infrastructure configuration follow security best practices and avoid critical vulnerabilities?"
 
-The audit checks below apply generically — adapt them to the project's actual stack.
+## Step 0: Detect Project Infrastructure
 
-## Audit Process
+Before auditing, identify the actual stack being used.
+
+**Deployment platform** — check for these config files:
+- `netlify.toml` → Netlify
+- `vercel.json` → Vercel
+- `.github/workflows/` → GitHub Actions (may deploy anywhere)
+- `fly.toml` → Fly.io
+- `Dockerfile` / `docker-compose.yml` → containerized
+
+**Backend** — check for:
+- `supabase/` directory → Supabase (Postgres + Edge Functions)
+- `firebase.json` → Firebase
+- `api/` or `pages/api/` or `app/api/` → Next.js API routes / serverless
+- `server/` or `backend/` → custom backend
+
+**Frontend framework**:
+- `vite.config.ts` → Vite
+- `next.config.*` → Next.js
+- `nuxt.config.*` → Nuxt
+
+**Payment provider** — search for:
+- `stripe` in `package.json` → Stripe
+
+**Client-side env var prefix** — determines what's exposed to browser:
+- Vite: `VITE_`
+- Next.js: `NEXT_PUBLIC_`
+- Create React App: `REACT_APP_`
+
+Document what you find. Skip sections below that don't apply to this project.
+
+**IMPORTANT: Actually read the configuration files — don't just check whether they exist.**
+
+## Audit Sections
 
 ### 1. Security Headers
 
-Find the project's hosting/server configuration file (e.g., `netlify.toml`, `vercel.json`, `nginx.conf`, `next.config.js`, server middleware). Check for these headers:
+Check the deployment platform config for security headers.
 
-| Header | Required Value | Why |
-|--------|---------------|-----|
-| `Content-Security-Policy` | Restrictive policy allowing only known sources | XSS prevention |
+**Required headers for any web app:**
+
+| Header | Recommended Value | Why |
+|--------|------------------|-----|
 | `X-Frame-Options` | `DENY` or `SAMEORIGIN` | Clickjacking prevention |
 | `X-Content-Type-Options` | `nosniff` | MIME type sniffing prevention |
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Force HTTPS |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Limit referrer leakage |
-| `Permissions-Policy` | Disable unused browser APIs | Reduce attack surface |
+| `Permissions-Policy` | `geolocation=(), microphone=(), camera=()` | Disable unused APIs |
+| `Content-Security-Policy` | (project-dependent — see below) | XSS prevention |
 
-Flag any missing headers as Medium severity (Critical if CSP is absent and the app renders user content).
+**CSP guidance:** The correct CSP depends on which external services are used. Build it based on what the project actually loads:
+- Stripe: add `https://js.stripe.com` to `script-src` and `frame-src`
+- Google Fonts: add `https://fonts.googleapis.com` to `style-src`
+- Supabase realtime: add `wss://*.supabase.co` to `connect-src`
+- CDN assets: add CDN domain to `img-src` or `script-src`
 
-Note: CSP `connect-src` must allow all API/backend domains the app calls. Read the code to identify external calls before evaluating CSP.
+For Netlify: check `netlify.toml` `[[headers]]` section.
+For Vercel: check `vercel.json` `headers` array.
+For Next.js: check `next.config.*` `headers()` function.
+
+Flag missing headers as **Medium** severity. Missing CSP as **High**.
 
 ### 2. Dependency Vulnerabilities
 
-Read `package.json` (or equivalent for the project's package manager):
-- Are security-critical packages (auth libraries, crypto, HTTP clients) on recent versions?
-- Are there packages with known CVEs in the version ranges specified?
-- Are versions pinned or using ranges (`^`/`~`)?
-- Is a lockfile present and committed?
+Read `package.json`:
+- Are security-critical packages on recent versions? (`zod`, auth libraries, payment SDKs)
+- Are dependency versions pinned with exact versions or using `^`/`~` ranges?
+- Is a lockfile (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`) present and checked into git?
 
-Flag significantly outdated security-critical packages as High severity.
+Run if available:
+```bash
+npm audit --audit-level=high 2>&1 | head -50
+```
 
-### Supply Chain Security
-- **Lockfile integrity:** Is a lockfile committed (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`)? Lockfiles should be committed — they pin exact versions and prevent dependency substitution attacks.
-- **Outdated dependencies:** Run `npm audit` (or equivalent). Note any high/critical CVEs.
-- **Typosquatting risk:** Check recently added packages for common typosquatting patterns — packages with names very similar to popular ones (e.g., `lodahs` vs `lodash`, `expres` vs `express`).
-- **Unpinned versions:** Dependencies with `*` or `latest` as version can silently upgrade to malicious releases. Flag any found.
-- **Transitive risk:** Note if any dependency is unmaintained (last publish > 2 years, no issues response) — these are targets for maintainer hijacking.
+Flag packages with known CVEs as **High** severity. Unpinned critical deps as **Medium**.
 
 ### 3. Environment Variable Audit
 
 **Client-side exposure check:**
-- Find all places the code reads environment variables for use in client-side/browser code
-- Identify which are safe to expose (publishable keys, public API URLs) vs. which are secrets
-- Verify that any secret (API key, signing secret, service role key) is NOT readable in the browser
+Search for the client-side env var prefix (detected in Step 0) across `src/`:
+```bash
+grep -r "VITE_\|NEXT_PUBLIC_\|REACT_APP_" src/ | grep -v "node_modules"
+```
 
-Common safe client-side vars: `NEXT_PUBLIC_*`, `VITE_*` that contain only publishable keys
-Never safe: service role keys, signing secrets, private API keys, database passwords
+- Verify only publishable/safe values use the client-side prefix (URLs, publishable API keys)
+- Flag any secret keys, service role keys, or API secrets with the client-side prefix as **Critical**
 
-**Documentation check:**
-- Does `.env.example` exist and document all required variables WITHOUT real values?
-- Is `.env` (with real values) in `.gitignore`?
+**Documentation:**
+- Does `.env.example` exist and document required secrets WITHOUT real values?
+- Does `.gitignore` include `.env` and `.env.local`?
 
 **Git exposure:**
-- Verify no `.env` file with real values is committed
-- Check git history if suspicious
+```bash
+git log --all --oneline -- "*.env" ".env*" 2>&1 | head -10
+```
+Check that no `.env` file with real values was ever committed.
 
-### 4. File Storage Security (if applicable)
+### 4. Backend Storage Security (if applicable)
 
-If the project uses file storage (S3, Supabase Storage, GCS, etc.):
-- Which buckets/containers are public vs. private?
-- Are file type restrictions enforced (only allow expected file types)?
+**For Supabase Storage:**
+Search migrations and edge functions for bucket creation/configuration:
+- Which buckets are public vs private?
+- Are file type restrictions enforced?
+- Can anonymous users list public bucket contents?
 - Are file size limits configured?
-- Can anonymous users list bucket contents? (public buckets should disable listing unless needed)
-- Are upload endpoints authenticated?
+
+**For other storage (S3, GCS, Firebase):**
+- Check for public bucket/container policies
+- Verify presigned URL expiry times are short
 
 ### 5. CORS Configuration
 
-Find CORS configuration (middleware, server config, or API gateway settings):
-- Is `Access-Control-Allow-Origin` set to specific allowed origins (not `*`)?
-- Is the allowed origins list driven by an environment variable (not hardcoded)?
-- Does the configuration fail closed (deny by default) if the env var is missing?
-- Does `*` appear anywhere for non-public APIs?
+Search for CORS configuration:
+```bash
+grep -r "ALLOWED_ORIGINS\|cors\|Access-Control" supabase/functions/ src/ --include="*.ts" | grep -v "node_modules" | head -20
+```
 
-**Additional CORS checks:**
-- **Credentials + wildcard:** `Access-Control-Allow-Credentials: true` with `Access-Control-Allow-Origin: *` is a critical misconfiguration — browsers reject it, but misconfigured servers expose this. Verify the origin is always a specific domain when credentials are enabled.
-- **Preflight cache duration:** `Access-Control-Max-Age` should be set to reduce preflight overhead. Missing it causes a preflight on every cross-origin request.
-- **Multi-layer consistency:** If CORS is configured at both the API server AND an upstream proxy (nginx, Cloudflare, API Gateway), they must agree. Conflicting headers cause intermittent failures that are hard to debug.
-- **Dynamic origin validation:** If origin is validated dynamically (regex or list match), verify the regex doesn't have anchoring issues (e.g., `example.com` matching `evil-example.com`).
+Check:
+- Is `ALLOWED_ORIGINS` (or equivalent) read from environment, not hardcoded?
+- Is the fallback for missing config restrictive (not `"*"`)?
+- Is origin validation exact match (not substring)?
 
-### 6. API/Server Function Security
+For Supabase edge functions: check `_shared/cors.ts` or equivalent.
+For Next.js API routes: check middleware or API route headers.
 
-For server-side functions or API routes:
-- Are state-changing endpoints protected by authentication checks?
-- Are there functions intended to be internal/scheduled that are inadvertently exposed publicly?
-- Is there proper request validation (required fields, type checking)?
+### 6. Server-Side Handler Security (if applicable)
 
-## Output Format (Required)
+**For Supabase Edge Functions** (`supabase/functions/`):
+- Functions that should be internal-only (scheduled jobs, webhooks) vs client-facing — are they gated appropriately?
+- Any function that could expose secrets via error messages?
+
+**For Next.js API routes / server actions**:
+- Are all state-changing routes checking authentication?
+- Are any routes callable without auth that shouldn't be?
+
+**General:**
+- Search for hardcoded secrets in server-side code:
+```bash
+grep -r "sk_live\|secret_key\|private_key\|password" supabase/functions/ src/api/ --include="*.ts" 2>/dev/null | grep -v "node_modules\|\.env" | head -20
+```
+
+## OUTPUT FORMAT (Required)
 
 ```markdown
-## Infrastructure Security Audit
+## Infrastructure Security Audit Report
+
+### Stack Detected
+- Deployment: [platform]
+- Backend: [Supabase / Next.js API / custom / etc.]
+- Frontend: [framework]
+- Payment provider: [Stripe / none / other]
+- Client env prefix: [VITE_ / NEXT_PUBLIC_ / etc.]
 
 ### Summary
-- Security headers configured: X/6
-- Dependency issues: X
-- Environment variable issues: X
-- Storage issues: X
-- CORS issues: X
+- [ ] Security headers configured
+- [ ] Dependencies free of known vulnerabilities
+- [ ] Environment variables properly scoped
+- [ ] Storage access properly restricted
+- [ ] CORS policies properly configured
 
 ### Security Headers
-| Header | Status | Current Value | Recommendation |
+| Header | Status | Recommendation |
+|--------|--------|----------------|
 
 ### Dependency Issues
 | Package | Current Version | Issue | Severity |
+|---------|----------------|-------|----------|
 
 ### Environment Variable Issues
 | Issue | Location | Severity |
+|-------|----------|----------|
 
 ### Storage Issues
-| Bucket/Container | Public? | File Type Restriction? | Issue |
+| Bucket/Container | Public? | Issue |
+|-----------------|---------|-------|
 
 ### CORS Issues
 | Issue | Location | Severity |
+|-------|----------|----------|
+
+### Server-Side Handler Issues
+| Issue | Location | Severity |
+|-------|----------|----------|
 
 ### Recommendations
-1. [Specific fix with file/location]
-2. [Specific fix with file/location]
+1. [Specific fix with file and line]
+2. [Specific fix with file and line]
+
+### Verdict
+[ ] PASSED - Infrastructure is secure
+[ ] NEEDS CHANGES - See recommendations above
 ```
 ```
 
@@ -153,7 +226,7 @@ For server-side functions or API routes:
 
 ## After Subagent Returns
 
-1. **Critical issues** → fix immediately (especially secrets exposure)
-2. **Missing headers** → add to hosting config (low-risk change)
-3. **Dependency issues** → create update plan with testing
-4. **All clear** → document audit date in KB_8
+1. **If Critical issues** → fix immediately (especially secret exposure)
+2. **If Missing headers** → add to deployment config (low-risk change)
+3. **If Dependency issues** → create update plan with testing
+4. **If all clear** → note audit complete in project docs

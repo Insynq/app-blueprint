@@ -1,18 +1,21 @@
 ---
 description: Implement a validated plan by spawning parallel implementer agents
 arguments:
+  - name: plan
+    description: Description of the plan to implement (references the orchestrator output)
+    required: true
   - name: scope
-    description: What to implement - "all", "next", phase name (e.g., "Phase 3"), or step range (e.g., "1-3")
+    description: "Which steps to implement: 'all', step numbers like '1-3', or 'next' for the next unfinished step"
     required: false
 ---
 
 # Implementation Orchestrator
 
-**IMPORTANT: This command spawns subagents to protect main context.**
+**This skill spawns a general-purpose subagent that reads a plan and implements it using parallel sub-implementers.**
 
 ## Action Required
 
-Spawn a Task with `subagent_type: general-purpose` using the prompt below.
+Spawn a Task with `subagent_type: general-purpose` using the prompt below. The orchestrator will break the plan into batches and implement them.
 
 ---
 
@@ -21,243 +24,240 @@ Spawn a Task with `subagent_type: general-purpose` using the prompt below.
 ```
 # Implementation Orchestrator
 
+Plan: **$ARGUMENTS.plan**
 {{#if scope}}Scope: **$ARGUMENTS.scope**{{/if}}
 {{#unless scope}}Scope: **all**{{/unless}}
 
 ## Your Role
 
 You are an implementation orchestrator. You take a validated plan and execute it by:
-1. Reading and understanding the plan + project context
+1. Reading and understanding the plan
 2. Breaking it into dependency-ordered batches
-3. **Verifying schemas and data before writing code** (CRITICAL)
-4. Implementing each batch (parallel where possible)
-5. **Running a post-batch audit after each batch** (CRITICAL — catches bugs before they compound)
-6. Fixing audit findings before proceeding to next batch
-7. Final build verification
-8. Reporting results
+3. Implementing each batch (parallel where possible)
+4. Verifying the build after each batch
+5. Reporting results
 
-You have access to: Agent (general-purpose subagents), Read, Edit, Write, Bash, Glob, Grep tools.
+You have access to: Task, Read, Edit, Write, Bash, Glob, Grep tools.
+You can spawn `general-purpose` subagents for parallel implementation.
 
 ## Step 0: Read Project Context
 
-Read `CLAUDE.md` FIRST. Extract:
-- Tech stack and frameworks in use
-- Build commands (type check, build, test)
-- Project patterns and conventions
-- DO NOT list — hard constraints to never violate
+Before reading the plan, read the project context:
+- `CLAUDE.md` (if present) — tech stack, patterns, key paths, DO NOTs
+- `README.md` — if CLAUDE.md is absent
 
-Key questions to answer from CLAUDE.md:
-- What is the type check command? (run after each batch)
-- What is the build command? (run at the end)
-- What database/ORM is in use? (informs migration handling)
-- What are the established code patterns?
-
-Also read `docs/LESSONS.md` (if it exists). Skim for entries relevant to the areas being implemented — UI components, data queries, integrations, DB schema. Known gotchas in LESSONS.md are cheaper to avoid than to debug after the fact.
+Note especially:
+- What build/type-check commands are available (`npm run build`, `tsc`, etc.)
+- Where migrations live (Supabase: `supabase/migrations/`, or project equivalent)
+- Where generated types live (Supabase: check `supabase/config.toml` or common paths)
+- Any project-specific conventions that affect how code should be written
 
 ## Step 1: Find and Read the Plan
 
 Look for the plan in these locations (in order):
-1. `docs/*.md` spec docs referenced in the prompt
-2. The most recent `.claude/plans/*.md` file
-3. KB docs referenced in the prompt
+1. The most recent `.claude/plans/*.md` file
+2. The orchestrator output referenced in the plan description
+3. KB docs referenced in the plan description
 
 Read the plan file and extract:
 - The ordered list of implementation steps
-- Files to create (NEW) and modify (MODIFY)
-- Dependencies between steps
+- Files to create (NEW)
+- Files to modify (MODIFY)
+- Dependencies between steps (what must be done before what)
 
-If the plan cannot be found, STOP and report: "Could not find plan."
+If the plan cannot be found, STOP and report: "Could not find plan. Please provide the plan file path or run /orchestrate first."
 
 ## Step 2: Determine Scope
 
+{{#if scope}}
+Scope is: $ARGUMENTS.scope
+
 - If "all": implement every step in order
 - If "next": find the first unimplemented step and implement just that one
-- If phase name (e.g., "Phase 3"): implement only that phase
 - If step range (e.g., "1-3"): implement only those steps
+- If single step (e.g., "5"): implement only that step
+{{/if}}
+
+{{#unless scope}}
+Implement all steps in the plan.
+{{/unless}}
 
 ## Step 3: Create Dependency Batches
 
-Group steps into batches:
+Group steps into batches that can be executed:
+
+**Batch rules:**
 - Steps within a batch have NO dependencies on each other
 - Each batch completes before the next starts
-- Database migrations are ALWAYS batch 1 (if applicable)
-- Types/interfaces before the code that uses them
-- Data access layers before UI components
-- UI components before route wiring
+- Database migrations are ALWAYS in their own batch (batch 1)
+- Edge functions / API routes can be parallel with each other but after migrations
+- Frontend types/contexts/hooks that other hooks depend on go before those hooks
+- UI components that import new hooks go after those hooks
 
-## Step 4: Pre-Implementation Verification (CRITICAL — DO NOT SKIP)
+Example batching for a typical feature:
+```
+Batch 1 (sequential): Database migrations
+Batch 2 (parallel):   Types file + Edge function / API route updates
+Batch 3 (sequential): Context/Provider (depends on types)
+Batch 4 (parallel):   Hooks that use the context
+Batch 5 (parallel):   Components that use the hooks
+Batch 6 (sequential): App router wiring, route updates
+```
 
-**Before writing ANY code, verify your assumptions against the actual codebase.**
-
-### 4a: Schema/Data Verification
-For any code that references existing database columns, API shapes, or data structures:
-- **Read the source** — the migration, schema file, or type definition
-- **List the actual field names** and compare against what you plan to write
-- If any mismatch: fix BEFORE writing code
-
-### 4b: Seed/Fixture Data Verification
-For any code that references existing data by name or ID:
-- **Read the source** — the seed file, fixture, or migration that created it
-- **Match EXACTLY** — similar names are wrong names
-
-### 4c: Select/Query + Transform Verification
-For any code that fetches data and maps it to a type:
-- **Find the transform/mapping function** that converts raw data to the TypeScript/app type
-- **Plan to update BOTH** the query AND the transform together
-- **Check ALL files** with similar query patterns — they may all need the same update
-
-### 4d: Integration Flow Verification
-For any new service layer, API call, or data access:
-- **Trace the full call chain**: UI → hook/service → API/DB
-- **Verify the calling code actually calls the right abstraction** (not a lower layer that bypasses validation)
-
-## Step 5: Implement Each Batch
+## Step 4: Implement Each Batch
 
 For each batch:
 
-### 5a: Pre-flight Check
-Verify files exist at expected paths. Read first few lines to confirm they match plan assumptions.
+### 4a: Pre-flight Check
+Before implementing, verify the files exist and match expectations:
+```bash
+# For files to modify — verify they exist
+ls -la [file paths]
+```
 
-### 5b: Implement
+Read the first few lines of files to modify, confirming they match the plan's assumptions.
 
-**For NEW files:** Use Write tool.
+### 4b: Implement
+
+**For NEW files:** Use the Write tool to create the file with the content from the plan.
 
 **For MODIFIED files:**
-1. Read the FULL file first
-2. Make specific changes using Edit tool
-3. Verify the edit was applied correctly
+1. Read the full file first
+2. Make the specific changes described in the plan using Edit tool
+3. Verify the edit was applied correctly by reading the changed section
 
-### 5c: Parallel Implementation
-If a batch has 2+ independent files, spawn parallel `general-purpose` subagents with this prompt template:
+**For MIGRATION files:** Write the SQL file to the migrations directory with today's timestamp:
+```
+supabase/migrations/YYYYMMDDHHMMSS_descriptive_name.sql  (Supabase projects)
+```
+Use format YYYYMMDDHHMMSS (e.g., 20260216150000).
 
+**For EDGE FUNCTIONS / API ROUTES:** Read the existing file, apply the modifications from the plan.
+
+### 4c: Parallel Implementation (when batch has multiple independent files)
+
+If a batch has 2+ independent files, spawn parallel `general-purpose` subagents:
+
+For each parallel implementation, use this prompt template:
 ```
 # Implement: [file description]
 
 ## Task
-[Specific changes for this file]
+[Specific changes from the plan for this file]
 
-## Pre-Implementation Checks
-Before editing, read and verify:
-- [Specific things to verify for this file]
-
-## File
+## File to Modify/Create
 Path: [file path]
 Action: [CREATE or MODIFY]
 
 ## Instructions
 - Read the file first (if MODIFY)
-- Apply exact changes described
-- Use Edit tool for modifications
+- Apply the exact changes described
+- Use Edit tool for modifications (not Write for existing files)
+- After changes, read back the modified section to verify
 
 ## What NOT to Do
 - Don't modify other files
 - Don't add features beyond the plan
 - Don't refactor surrounding code
+- Don't add comments or docstrings the plan didn't specify
 ```
 
-### 5d: Post-Batch Type Check
-After each batch, run the project's type check command from CLAUDE.md.
-Fix type errors before continuing.
+Wait for ALL parallel agents to complete before moving to the next batch.
 
-If type errors persist after 2 fix attempts:
-- **STOP. Do not proceed to the next batch.**
-- Report the errors to the user with exact file paths and line numbers
-- Ask: "These type errors couldn't be auto-fixed. Do you want to (1) fix them manually and re-run, (2) skip this batch and continue, or (3) abort?"
-- Do not continue until the user explicitly chooses an option
+### 4d: Post-Batch Verification
 
-### 5e: Post-Batch Audit (CRITICAL — DO NOT SKIP)
-
-After each batch passes the type check, spawn a `general-purpose` audit agent:
-
+After each batch completes, run a type check using the project's available command:
+```bash
+npx tsc --noEmit 2>&1 | head -50
 ```
-# Post-Batch Audit
+(If the project uses a different type checker, adapt accordingly based on project context from Step 0.)
 
-Batch [N] just implemented [description of what was done].
+If there are type errors:
+1. Read the error messages
+2. Fix the specific issues (usually import paths or type mismatches)
+3. Re-run the check
+4. If errors persist after 2 fix attempts, report them and continue to next batch
 
-## Files Changed
-[List all files created or modified in this batch]
+## Step 5: Final Verification
 
-## Your Task
+After all batches complete, run the project's build command (detected in Step 0):
+```bash
+# Type check
+npx tsc --noEmit 2>&1 | tail -20
 
-Read EVERY changed file in full. Audit for:
-
-1. **Correctness**: Do queries match actual data shapes? Is the logic correct?
-2. **Regressions**: Could these changes break existing behavior? Are all existing code paths still functional?
-3. **Edge cases**: Empty arrays, null values, zero quantities, single items, concurrent operations
-4. **Type safety**: Are all new optional fields handled safely (null checks, fallbacks)?
-5. **Security**: Auth checks in place? Sensitive data not exposed? Input validation at boundaries?
-6. **Downstream compatibility**: Will this work with what's being built in the next batch?
-
-Categorize findings as:
-- **BUG**: Must fix before proceeding
-- **CONCERN**: Should discuss — architectural question or design decision needed
-- **NOTE**: Awareness item — no action needed now
-
-Include exact file paths and line numbers for BUGs and CONCERNs.
+# Build check
+npm run build 2>&1 | tail -30
 ```
 
-### 5f: Fix Audit Findings
-1. **BUGs**: Fix all immediately. Re-run type check after fixes.
-2. **CONCERNs that are clear fixes**: Fix them.
-3. **CONCERNs that need decisions**: Report to user — these are the only items that should pause implementation.
-4. **NOTEs**: Acknowledge and continue.
+If the build fails:
+1. Read the errors
+2. Fix obvious issues (missing imports, type mismatches)
+3. Re-run build
+4. Report any remaining errors
 
-Only proceed to the next batch after all BUGs are fixed and the type check passes.
-
-## Step 6: Post-Implementation Checks
-
-### 6a: Query + Transform Completeness
-For every file where you added fields to a query/select:
-- Find the transform/mapping function
-- Verify EVERY new field is mapped in the transform
-- If any are missing, fix immediately
-
-### 6b: Integration Wiring
-For every new API call or service function:
-- Find the calling code
-- Verify it calls the right layer
-
-### 6c: Full Build
-Run the project's build command from CLAUDE.md.
-
-## Step 7: Summary Report
+## Step 6: Summary Report
 
 ```markdown
 ## Implementation Complete
 
+### Plan Executed
+[Plan name/description]
+
 ### Batches Completed
-| Batch | Steps | Files | Audit Result | Status |
-|-------|-------|-------|--------------|--------|
-| 1 | ... | ... | N BUGs fixed | ✅ |
+| Batch | Steps | Files | Status |
+|-------|-------|-------|--------|
+| 1 | Migration | [files] | ✅ Created |
+| 2 | Types + Edge Fns | [files] | ✅ Created/Modified |
+| ... | ... | ... | ... |
 
 ### Files Created
 | File | Purpose |
+|------|---------|
+| [path] | [description] |
 
 ### Files Modified
 | File | Changes |
+|------|---------|
+| [path] | [what changed] |
 
 ### Build Status
-- Type check: ✅ Clean / ⚠️ [N] errors
+- TypeScript: ✅ Clean / ⚠️ [N] errors
 - Build: ✅ Clean / ⚠️ [N] errors
 
-### Outstanding Issues (if any)
-[Issue and suggested fix]
+### Remaining Issues (if any)
+- [Issue description and suggested fix]
+
+### Next Steps
+- [ ] Run `/db-push` if migrations were created (Supabase projects)
+- [ ] Deploy edge functions if modified: `npx supabase functions deploy [name]`
+- [ ] Run `/gen-test` for new hooks/components
+- [ ] Manual testing per the plan's verification checklist
 ```
 
-## MANDATORY Rules
+## Important Instructions
 
-1. **NEVER guess field/column names** — read the source first
-2. **NEVER add fields to a query without updating the transform**
-3. **NEVER skip the post-batch audit**
-4. **ALWAYS read CLAUDE.md before starting**
-5. **ALWAYS run type check after each batch**
+1. **Read project context first** — Step 0 is not optional; it determines build commands and key paths
+2. **Follow the plan exactly** — Don't add features, refactor, or "improve" beyond what the plan specifies
+3. **Read before editing** — Always read the full file before making changes
+4. **Verify after each batch** — Run type check to catch errors early
+5. **Report, don't guess** — If something doesn't match the plan, report it rather than improvising
+6. **Respect dependencies** — Never implement a step before its dependencies
+7. **Use Edit, not Write** — For existing files, always use Edit tool to make targeted changes
+8. **Preserve existing code** — Don't accidentally delete or modify code the plan doesn't touch
+
+## Error Recovery
+
+- **File doesn't exist** — If a file to modify doesn't exist, check if the plan has the wrong path. Search for it with Glob. If truly missing, report it.
+- **Type errors after edit** — Usually a missing import or wrong type name. Fix the specific error, don't refactor.
+- **Plan is ambiguous** — If the plan says "add X" but doesn't specify where, read the file and find the most logical location based on the surrounding code.
+- **Conflicting changes** — If two batch items would modify the same line, implement them sequentially instead of parallel.
 ```
 
 ---
 
 ## After Orchestrator Returns
 
-1. **All batches succeeded + audits clean** → ship when ready
-2. **Audit found CONCERNs needing decisions** → resolve with user before shipping
-3. **Build errors remain** → fix specific errors reported
-4. **Verification failed** → re-read source schemas and fix mismatches
+1. **All batches succeeded** — Run `/db-push` if migrations created, deploy edge functions if modified
+2. **Build errors remain** — Fix the specific errors reported, usually import/type issues
+3. **Plan mismatch** — If the orchestrator reports the plan doesn't match the codebase, re-run `/orchestrate` to get an updated plan
+4. **Partial completion** — Run `/implement --scope next` to continue from where it stopped

@@ -1,8 +1,8 @@
 ---
-description: Review proposed code or plans for elegance, reuse, anti-patterns, and security
+description: Review proposed code/plans to check if the solution is the most elegant option
 arguments:
   - name: file
-    description: Specific file to audit (optional — defaults to recent changes or current plan)
+    description: Specific file to audit (optional - defaults to current plan/changes)
     required: false
   - name: focus
     description: Focus area - "reuse", "patterns", "antipatterns", "security", or "all" (default)
@@ -11,11 +11,11 @@ arguments:
 
 # Code Audit Subagent
 
-**IMPORTANT: This command spawns a subagent to protect main context.**
+**IMPORTANT: This skill spawns a subagent to protect main context.**
 
 ## Action Required
 
-Spawn a Task with `subagent_type: Explore` using the prompt below.
+Spawn a Task with `subagent_type: Explore` using the prompt below. The subagent will audit the code/plan and return a verdict.
 
 ---
 
@@ -31,151 +31,167 @@ Spawn a Task with `subagent_type: Explore` using the prompt below.
 
 > "Knowing what you know now about this codebase, is this solution the most elegant option?"
 
-## Step 0: Read Project Context
+## Step 0: Discover Project Patterns
 
-Read `CLAUDE.md` to understand:
-- Established patterns and conventions
-- Tech stack (informs which anti-patterns apply)
-- Hard constraints (DO NOTs)
-- Any project-specific security requirements
+Before auditing, read the project to understand its established patterns.
 
-Also read `docs/LESSONS.md` (if it exists). Cross-reference the code being audited against known gotcha categories — UI event handling, query/transform completeness, integration wiring, DB constraint coverage. LESSONS.md entries describe real bugs that have already happened; the audit should check for recurrence.
+1. Read `CLAUDE.md` (if present) — look for:
+   - Explicit DO NOTs or anti-patterns
+   - Patterns section describing established conventions
+   - Tech stack (framework, UI library, DB, auth system)
+
+2. Scan for existing utilities/hooks/contexts:
+   - `Glob("src/lib/**/*.ts")` — utility functions
+   - `Glob("src/hooks/**/*.ts")` — existing hooks
+   - `Glob("src/contexts/**/*.tsx")` — state contexts
+   - Read a sample of each to understand what's available
+
+3. Read 2-3 existing files similar to what's being audited to understand the established code style.
+
+Document what you find — this informs every check below.
 
 ## Audit Checklist
 
 ### 1. Reuse Opportunities
 
-Before approving new code, search the codebase for existing utilities that solve the problem:
-- Utility/helper functions in the project's lib/utils directories
-- Existing hooks, services, or data access patterns
-- Existing UI components or layout patterns
-- Existing API/service wrappers
+Before approving new code, check if existing utilities solve the problem:
 
-**IMPORTANT: Actually read the source files of potential reuse candidates.** Don't just check if they exist — read the implementation to see if it can be extended or extracted into a shared utility.
+- Search `src/lib/` for utility functions that do something similar
+- Search `src/hooks/` for hooks that already fetch or compute this data
+- Search `src/contexts/` for contexts that already provide this state
+- Search `src/components/` for UI components with similar patterns
+
+**IMPORTANT: Actually read the source files of potential reuse candidates.**
+Don't just check if they exist — read the code to see if the implementation
+can be extended or extracted into a shared component.
 
 ### 2. Pattern Alignment
 
-Check that code follows the patterns established in `CLAUDE.md` and visible in the codebase:
-- Data fetching pattern consistent with existing hooks/services
-- Error handling consistent with how errors are handled elsewhere
-- Type definitions consistent with existing type conventions
-- Component structure consistent with existing components
+Check that new code follows the patterns established in the codebase:
 
-### 3. Anti-Patterns to Flag
+- **Data fetching**: Does it use the same approach as existing fetches (custom hooks, React Query, context, etc.)?
+- **Auth/user identity**: Does it access the current user the same way as other components?
+- **Database queries** (if Supabase): Does it use explicit column selection, not `select('*')`?
+- **Role/permission checks**: Does it use the project's established role-checking pattern?
+- **Class names** (if Tailwind): Does it use the project's class merging utility (e.g., `cn()`)?
+- **Error handling**: Does it follow the project's error handling conventions?
 
-> **The Unified Model Principle:** One normalized data type shared across all contexts (agent view, vendor view, admin view) beats multiple near-identical types plus translator functions. Translators create maintenance debt — when the source shape changes, every translator breaks independently. The anti-patterns below flag common violations of this principle.
-
-**Universal Anti-Patterns** (apply to all projects)
-
-| Anti-Pattern | Severity | Why It's Bad |
-|--------------|----------|--------------|
-| Wildcard data fetching (`select *`, overfetching) | High | Security risk, over-fetches sensitive data |
-| Adapter/translator between internal contexts | High | Creates maintenance debt and divergence risk — use unified normalized type instead |
-| New component that duplicates one in KB_7 catalog | High | Creates divergence and maintenance burden — extend the existing component |
-| New hook/service for data that already exists | Medium | Duplicates functionality, creates divergence |
-| Missing error handling at system boundaries | Medium | Silent failures at user input or external API edges |
-| Direct auth state in localStorage | High | Persists across sessions (use sessionStorage or in-memory) |
-| Adding fields to a query without updating the transform | High | Data fetched but never mapped to return type |
-
-**Project-Specific Anti-Patterns** (apply when your project has these patterns — add your own as they emerge)
+### 3. Universal Anti-Patterns to Flag
 
 | Anti-Pattern | Severity | Why It's Bad |
 |--------------|----------|--------------|
-| Modifying immutable records | Critical | Breaks audit trails |
-| Calling lower abstraction layer when higher one should be used | Critical | Bypasses validation/payment/auth logic |
+| `select('*')` on DB queries | High | Security risk, over-fetches data |
+| `localStorage` for auth/session state | High | Persists unexpectedly across sessions |
+| Direct role column comparison | Medium | Bypasses role abstraction |
+| Missing error handling at system boundaries | Medium | Silent failures |
+| New hook/component for data already fetched elsewhere | Medium | Duplicates functionality |
+| String concatenation for class names | Low | Use project's class merging utility |
 
-Add entries here as you discover project-specific constraints during development.
-
-### 4. Integration Flow Check
-
-For any new service call, API endpoint, or data access:
-1. **Trace the call chain**: UI → service/hook → API/DB
-2. **Verify calling code uses the right abstraction** — not a lower layer that bypasses validation
-3. **Verify error handling** at each layer boundary
-
-For any new fields added to a query:
-1. **Find the transform/mapping function** that converts raw data to the app type
-2. **Verify ALL new fields are mapped** in the transform
-3. **Check ALL similar query patterns** in the codebase — they may need the same update
-
-### 5. Over-Engineering Checks
+### 4. Over-Engineering Checks
 
 Flag if code:
-- Creates an abstraction for a single use case
+- Creates abstraction for single use
 - Designs for hypothetical future requirements
-- Adds error handling for scenarios that can't happen
+- Adds error handling for impossible scenarios (trust internal code)
 - Uses feature flags when a direct change is possible
-- Creates two near-identical components when one parameterized version works
-- Adds backwards-compatibility shims for code that has no other callers
+- Creates a helper for a one-time operation
+- Creates two near-identical hooks/components when one parameterized version works
 
-### 6. Security Checks
+### 5. Type Consistency
 
-**6a. Authentication & Authorization**
-- Are all state-modifying operations protected by auth checks?
-- Are role/permission checks happening server-side, not just client-side?
-- Can the auth check be bypassed by manipulating client-side state?
+Check types match project standards:
+- Uses the project's established type definitions (not ad-hoc inline types for shared concepts)
+- Date handling consistent with rest of codebase (Date objects vs ISO strings)
+- Enum values match DB or project-defined enums
 
-**6b. Input Validation**
-- Is user input validated at system boundaries (API endpoints, form handlers)?
-- Is validation happening on the server, not just the client?
-- Are there injection risks (SQL injection, command injection, template injection)?
+### 6. Security-Specific Checks (REQUIRED)
 
-**6c. Data Exposure**
-- Do new queries expose fields that shouldn't be accessible to the requesting user?
-- Is sensitive data (tokens, secrets, PII) filtered before sending to the client?
-- Are there overfetching patterns that expose more data than needed?
+These checks catch vulnerabilities that pattern matching alone won't find.
 
-**6d. XSS Prevention**
-- Is user-supplied content rendered safely (not as raw HTML)?
-- Are URL constructions using user input safe from injection?
-- Is any markdown or rich text rendering properly sanitized?
+**6a. Auth/Data Bypass**
+For any endpoint or server action that accepts status fields or IDs from the client:
+- Can a user call it directly with fabricated data to skip payment/validation?
+- Is the frontend the only thing preventing bad data, or is there server-side validation?
+- For payment flows: Can someone submit a completion status with a fake payment reference?
 
-**6e. Secrets and Environment Variables**
-- No secrets or private keys in frontend/client-side code
-- No hardcoded credentials, API keys, or tokens
-- Environment variable naming follows the project convention (client-safe vs. server-only)
+**6b. Race Conditions on Shared State**
+For any counter, flag, or status field modified by the plan:
+- Are there OTHER code paths (existing edge functions, hooks, DB triggers) that also modify this same field?
+- If multiple paths exist, are ALL of them atomic?
 
-**6f. Rate Limiting and Abuse**
-- Are expensive or sensitive operations (auth, email, payments) rate-limited?
-- Can a malicious user trigger costly operations in bulk?
+**6c. Webhook/Event Idempotency**
+For any webhook or event handler that modifies data:
+- What happens if the same event fires twice?
+- Will it double-count, double-charge, or corrupt state?
+- Is there a check for "already processed" before modifying data?
 
-**6g. Error Information Disclosure**
-- Do error responses expose internal implementation details (stack traces, DB structure)?
-- Are error messages user-friendly without being informative to attackers?
+**6d. Hardcoded Values vs Config**
+Are there values in the plan (limits, fees, thresholds) that:
+- Are hardcoded in SQL/code but also exist as configurable constants elsewhere?
+- Could drift if an admin changes configuration via UI?
+- Exist in multiple places that could get out of sync?
 
-**6h. Race Conditions**
-- Are there operations that assume single-execution but could run concurrently?
-- Are idempotency keys used where needed (payments, external API calls)?
-- Are "check-then-act" patterns (read-then-write) protected against races?
+**6e. Data Exposure**
+Do any new columns or fields (especially tokens, keys, identifiers):
+- Get exposed to the frontend via existing broad queries?
+- Contain sensitive data that shouldn't be in the browser?
 
-**6i. CSRF Protection**
-- Are state-modifying endpoints protected against cross-site request forgery?
-- If using cookies for auth: is a CSRF token or SameSite=Strict/Lax cookie attribute in use?
-- Are CORS settings restrictive enough to prevent cross-origin state mutation?
-- Note: APIs using only `Authorization: Bearer` headers (not cookies) are not CSRF-vulnerable
+**6f. XSS Prevention**
+- Flag any `dangerouslySetInnerHTML` — each usage must be justified and sanitized
+- Check URL construction with user input — use `new URL()` not string concat
+- Verify any markdown rendering uses sanitization (e.g., DOMPurify)
+- Verify user-supplied content in email templates is escaped
 
-**6j. Session Management**
-- Do auth tokens have appropriate expiration times? (access tokens: minutes to hours; refresh tokens: days to weeks)
-- Is token invalidation handled on logout — server-side revocation or short expiry?
-- Are refresh tokens rotated on use (rotation prevents replay if a token is stolen)?
-- Is session state stored appropriately — not in localStorage for sensitive tokens?
+**6g. CSRF & Request Forgery**
+- Verify all server-side handlers for state changes check authentication (JWT, session, etc.)
+- Verify CORS is configured via environment variable (not hardcoded `"*"`)
+- Check that no GET requests perform state-changing operations
 
-**6k. Git History Secrets**
-- If secrets were removed from files in a recent commit, they may still be in git history
-- Flag any commit messages referencing secret rotation, credential removal, or key deletion
-- Recommend: `git log --all --oneline -- .env*` and `git log -S "password\|secret\|key\|token" --oneline` to surface historical secret exposure
-- If secrets were committed: the fix is git history rewrite (filter-branch or BFG) AND credential rotation — removing from HEAD is not enough
+**6h. Rate Limiting**
+Flag any server-side handler that processes these WITHOUT rate limiting:
+- Authentication endpoints (password reset, magic links, invite acceptance)
+- Payment creation
+- Email sending
+- User registration/account creation
 
-## Output Format (Required)
+**6i. Privilege / Auth Scope**
+- Does any new code allow a lower-privileged user to trigger actions reserved for higher roles?
+- Are there any direct object reference issues (user A accessing user B's data by ID)?
+- Verify server-side handlers re-check permissions, not just the frontend
+
+**6j. Payment Security** (if project uses a payment provider)
+- Amount validation: server must verify prices against DB records, not trust client-provided amounts
+- Customer ownership: verify payment customer ID belongs to the authenticated user
+- Webhook idempotency: every webhook handler must check "already processed"
+- No raw payment data (card numbers, CVVs) in logs, DB, or error messages
+
+**6k. Error Information Disclosure**
+- Flag server handlers returning raw error messages to clients
+- Flag logging of auth metadata (email addresses, tokens, user IDs in auth flows)
+- Verify error responses don't reveal: database structure, table/column names, stack traces
+
+**6l. Environment Variable Exposure**
+- Verify no client-side env vars (e.g., `VITE_` in Vite, `NEXT_PUBLIC_` in Next.js) contain secrets
+- Verify secret keys are NEVER referenced in frontend code
+- Check that no `.env` file with real values is committed
+
+## OUTPUT FORMAT (Required)
 
 ```markdown
 ## Code Audit Report
 
+### Project Patterns Discovered
+- Framework/stack: [what was found]
+- Established data fetching pattern: [description]
+- Auth/user identity pattern: [description]
+- Key reusable utilities found: [list]
+
 ### Summary
-- Reuse opportunities found: [N]
-- Pattern violations: [N]
-- Anti-patterns detected: [N]
-- Security concerns: [N]
+- [ ] Reuse opportunities found
+- [ ] Pattern violations
+- [ ] Anti-patterns detected
+- [ ] Over-engineering concerns
+- [ ] Security concerns
 
 ### Reuse Opportunities
 | Proposed Code | Existing Alternative | Location |
@@ -189,17 +205,21 @@ Flag if code:
 | Pattern | Location | Severity |
 |---------|----------|----------|
 
+### Over-Engineering Concerns
+| Concern | Recommendation |
+|---------|----------------|
+
 ### Security Concerns
 | Issue | Category | Severity | Mitigation |
 |-------|----------|----------|------------|
 
 ### Recommendations
-1. [Specific recommendation with exact file/change]
-2. [Specific recommendation with exact file/change]
+1. [Specific recommendation with exact file/change needed]
+2. [Specific recommendation with exact file/change needed]
 
 ### Verdict
-[ ] APPROVED — Solution is elegant
-[ ] NEEDS CHANGES — See recommendations above
+[ ] APPROVED - Solution is elegant
+[ ] NEEDS CHANGES - See recommendations above
 ```
 ```
 
@@ -207,6 +227,6 @@ Flag if code:
 
 ## After Subagent Returns
 
-1. **APPROVED** → proceed with implementation
-2. **NEEDS CHANGES** → address recommendations, then re-audit or proceed with fixes
-3. **Major concerns** → consider running `/plan` to redesign the approach
+1. **If APPROVED** → proceed with implementation
+2. **If NEEDS CHANGES** → address recommendations, then re-audit or proceed with fixes
+3. **If major concerns** → consider running `/plan` to redesign approach

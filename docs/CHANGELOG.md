@@ -11,3 +11,9 @@
 ---
 
 <!-- /ship prepends new entries below this line -->
+
+## 2026-05-04 — Sync .claude/commands with global; add /db-push and /research; align audit-* family
+
+- Add `/db-push` (Supabase migration push with validate-migration safety) and `/research` (deep web research agent) to template.
+- Refresh `/implement`, `/ship`, `/audit-code`, `/audit-infra`, `/audit-rls`, `/orchestrate`, `/brainstorm` from iterated global versions; scrub project-specific references so the template ships cleanly to fork users.
+- Align `audit-code`, `audit-infra`, `audit-rls` on parallel structure: Core Question, "Actually read" emphasis, checkbox Summary, Verdict section.
