@@ -297,6 +297,7 @@ Examples:
 - `docs/Test KBs/TEST_KB_00_Index.md` — consult for test strategy, RLS testing with pgTAP, JS integration tests, component tests with MSW, Playwright E2E, or testing async patterns (Realtime, outbox, scheduled jobs).
 - `docs/Form KBs/FORM_KB_00_Index.md` — consult for any form, validation schema, wizard, or input-handling work.
 - `docs/Obs KBs/OBS_KB_00_Index.md` — consult for structured logging, error tracking, audit logs, performance monitoring, or alerting.
+- `docs/Bill KBs/BILL_KB_00_Index.md` — consult for Stripe integration, subscription webhooks, plan gating, customer portal, trials, or billing lifecycle.
 
 **Manual verification:**
 - `docs/smoke-tests-pending.md` — single source of truth for outstanding manual smoke tests (stable IDs). When asked about ship-readiness or "what's left to verify," point here; do not re-list tests in commits or PRs.
