@@ -2,22 +2,62 @@
 
 A Claude Code project template built around a methodology, not scaffolding.
 
+> Built and maintained by [Insynq](https://insynqk.com). Source: [github.com/Insynq/claude-app-blueprint](https://github.com/Insynq/claude-app-blueprint).
+
 ## Philosophy
 
 The most expensive mistakes in software happen when you build the wrong thing with confidence. This template enforces a discovery-first workflow that forces clarity before any code is written.
 
 **The sequence that actually works:**
 ```
-/kickoff → scope review → /brainstorm → /plan-review → /implement → /ship
+/preflight → /kickoff → scope review → /brainstorm → /plan-review → /implement → /ship
 ```
 
 ## Getting Started
 
-1. Clone or use this as a template to create your project folder
-2. Open the folder in VS Code with Claude Code
-3. Start a session and run `/kickoff`
+### 1. Get the code
 
-The kickoff command guides you through a discovery session and produces all the foundational files. No configuration needed before that.
+Pick whichever you have available — your AI agent doesn't need to figure this out.
+
+**With git** (cross-platform, easiest):
+```
+git clone https://github.com/Insynq/claude-app-blueprint.git my-project
+cd my-project
+```
+
+**Without git, on macOS/Linux:**
+```
+curl -L https://github.com/Insynq/claude-app-blueprint/archive/refs/heads/main.zip -o app-blueprint.zip
+unzip app-blueprint.zip && mv claude-app-blueprint-main my-project && cd my-project
+```
+
+**Without git, on Windows (PowerShell):**
+```
+Invoke-WebRequest -Uri https://github.com/Insynq/claude-app-blueprint/archive/refs/heads/main.zip -OutFile app-blueprint.zip
+Expand-Archive app-blueprint.zip
+Move-Item claude-app-blueprint-main\claude-app-blueprint-main my-project
+cd my-project
+```
+
+### 2. Open in your editor with an AI agent
+
+Open the folder in VS Code (or your editor of choice). Any of these agents work: Claude Code, Codex, Cursor, Aider, Continue, Cline.
+
+### 3. Run preflight
+
+This is a one-time, sub-minute setup that records which agent + OS you're on into `CLAUDE.md` so future sessions don't have to re-figure it out. It also confirms the framework's `.md` instruction files weren't accidentally installed somewhere global.
+
+- **Claude Code:** type `/preflight`
+- **Other agents:** paste *"Read and follow the instructions in `.claude/commands/preflight.md`"*
+
+### 4. Run kickoff
+
+The discovery session that defines your app concept, scope, and architecture before any code is written.
+
+- **Claude Code:** type `/kickoff`
+- **Other agents:** paste *"Read and follow the instructions in `.claude/commands/kickoff.md`"*
+
+> **Note for Codex / Cursor / non-Claude-Code agents:** The `.md` files in `.claude/commands/` are instruction documents, not commands you need to install. When the user types `/<name>`, just read the corresponding file and follow its steps inline. Don't copy them anywhere global.
 
 **Persistent Memory** — Each project gets a memory directory (`.claude/memory/`) that Claude reads at the start of every session. Kickoff seeds it with project concept, user preferences, and key decisions. Future sessions inherit this context automatically, so you don't repeat yourself across conversations.
 
@@ -37,7 +77,8 @@ The kickoff command guides you through a discovery session and produces all the 
 ### Workflow (Masters — coordinate everything else)
 | Command | Purpose |
 |---------|---------|
-| `/kickoff` | Discovery session — run this first on any new project |
+| `/preflight` | One-time per clone — captures agent + OS into CLAUDE.md, verifies commands are project-local |
+| `/kickoff` | Discovery session — run after `/preflight` on any new project |
 | `/orchestrate` | Full autonomous workflow — investigate → plan → implement |
 | `/brainstorm` | Deep research + options before committing to an approach |
 | `/implement` | Execute a validated plan (parallel agents + post-batch audit) |
@@ -78,6 +119,8 @@ The kickoff command guides you through a discovery session and produces all the 
 
 ### Full Workflow (for new features)
 ```
+/preflight                        ← once, on a fresh clone (agent + OS)
+     ↓
 /kickoff                          ← once, at project start
      ↓
 /brainstorm "what to build"       ← explore options with trade-offs
@@ -148,3 +191,7 @@ These are labeled clearly and can be skipped when they don't apply.
 ## Who This Is For
 
 Anyone building a web app who wants to work systematically with Claude Code. The template provides the methodology and command library. You bring the idea and tech stack choices.
+
+---
+
+**App Blueprint** is by [Insynq](https://insynqk.com) — operations-focused software design. Found this useful? A star on the [repo](https://github.com/Insynq/claude-app-blueprint) helps others discover it.

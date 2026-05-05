@@ -6,6 +6,8 @@ description: Guided discovery session — defines your app concept, scope, and a
 
 **This is a conversation command.** No code gets written until we've worked through the discovery together. The files produced at the end become the indexed foundation every future Claude session reads.
 
+**Prerequisite:** `/preflight` should have been run first — it captures which agent and OS the project is being worked on with. Before starting, check whether `CLAUDE.md` has a populated `## Environment` section (real values, not `[TODO]`). If not, tell the user: "Run `/preflight` first, then come back to `/kickoff`." Don't proceed until preflight has run.
+
 **If you want to skip a phase or already have answers ready**, say "skip" or paste your answers directly. Kickoff adapts to what you already know.
 
 **If the idea isn't fully formed yet**, that's okay. We can do a shorter "concept sketch" session: just describe the problem you're trying to solve and the type of person experiencing it. Everything else can come later.
@@ -41,8 +43,42 @@ Work through the 5 phases below **in order**. Follow these rules:
 3. **At the end of each phase**, briefly summarize what you've learned. Give the user a chance to correct anything before moving on.
 4. **Be a thinking partner, not a form.** Push back gently if answers are vague, solution-focused instead of problem-focused, or if V1 scope seems too large.
 5. **Problem-first framing.** The first question is about the problem, not the solution. Redirect if the user jumps to features.
+6. **Push back on lazy or evasive answers.** If the user says variants of "I don't care, just do it," "surprise me," "you decide," "whatever you think is best," "just make something cool," or otherwise tries to outsource the thinking — STOP and push back. Don't steamroll past it. Sample script:
 
-After all 5 phases, present a synthesis for approval, then write the files.
+   > "I'm happy to make recommendations once we have something to work with, but I need a real signal from you on the problem and the user. Those are choices only you can make. If I just spin up something random, I'll burn through your time and tokens producing work that probably won't fit what you actually want. Even a rough sketch is enough — what's pulling you toward this project? What pain were you noticing when the idea showed up?"
+
+   Don't be apologetic about asking. The whole point of this session is to extract real intent — every downstream command produces lower-quality work without it. Hold the line firmly but warmly: this is care, not gatekeeping.
+
+After all 6 rules and 5 phases, present a synthesis for approval, then write the files.
+
+---
+
+## Step 0 — Deliver the Welcome
+
+Before asking any discovery questions, deliver this welcome to the user. Reproduce it largely verbatim — light tone-matching is fine, but don't paraphrase away the structure or the honesty about the framework's bias. End with the "Ready?" prompt and **wait** for confirmation before starting Phase 1.
+
+```
+Welcome to app-blueprint — a project template built around a methodology, not scaffolding. It's by Insynq (https://github.com/Insynq/claude-app-blueprint), designed to help you build production applications systematically with AI coding agents.
+
+**The philosophy:** clarity before code. The most expensive software mistakes happen when you build the wrong thing with confidence. Every command in this template enforces a discovery-first workflow — kickoff → brainstorm → plan-review → implement → ship — plus support commands for debugging, security audits, and database work.
+
+**Honest about the bias:** the methodology is universal, but the patterns library skews toward operational web apps and SaaS — auth, RBAC, billing, forms, dashboards, RLS, real-time, that shape of thing. If you're building a game, a library, a CLI tool, or research code, the methodology still applies but several stack-reference KBs and commands (like /audit-rls, /gen-migration) won't be relevant. I'll adapt as we go and skip what doesn't fit.
+
+**What's already on disk:**
+- 23 commands in `.claude/commands/` — kickoff, brainstorm, plan, implement, ship, debug, audits, generators
+- Stack-reference KBs in `/docs/` covering Supabase, Auth, UI/UX, Forms, Jobs, Tests, Observability, Billing, AI integration
+- A persistent memory directory at `.claude/memory/` so context carries across sessions
+
+**What kickoff does next:** a 5-phase guided discovery (~10–15 minutes) capturing the problem, what the app does, V1 scope, tech stack, and working style. I'll write seven foundation files at the end that every future session reads.
+
+**Tip — voice input:** if typing feels slow, click the microphone icon in the VS Code chat panel and just talk. The transcription is surprisingly accurate, you can edit it before sending, and it dramatically speeds up discovery sessions like this one. Especially helpful for the open-ended "describe the problem" questions where typing a paragraph feels like a chore.
+
+One question at a time. If you have answers ready, paste them and we'll skip ahead. Push back if anything feels off — this is a conversation, not a form. And if you find yourself tempted to say "just pick something for me," resist — I'd rather take an extra minute now to get your real input than spin up the wrong thing fast.
+
+Ready? Phase 1 starts with the problem you're trying to solve.
+```
+
+After the user confirms (any affirmative — "yes", "go", "ready", or just answering the first Phase 1 question directly), proceed to Phase 1.
 
 ---
 
@@ -74,12 +110,23 @@ Ask in sequence (one at a time, wait for each answer):
 
 Ask in sequence:
 
-1. "Is this a UI application (web app, mobile app, dashboard), or a non-UI project (API, CLI tool, internal service, library)?"
+1. "What kind of project is this? Pick the closest match — I'll adapt the rest of kickoff to fit:
+   - **Operational web app / SaaS** — auth, dashboards, multi-user, billing, the things this template is most opinionated about
+   - **Internal tool or admin app** — ops dashboard, workflow tool, often single-tenant
+   - **Marketing site / blog** — mostly content, light interactivity
+   - **API or library** — programmatic interface, no UI
+   - **CLI tool** — terminal application
+   - **Game** — web, mobile, or native
+   - **Research / data pipeline** — notebooks, ETL, model training
+   - **Other** — describe in your own words"
 
-   **Branch based on answer:**
+   **Adapt downstream based on the answer:**
 
-   - **UI application** — continue with questions 2–5 as written below.
-   - **Non-UI project** — replace question 3 with: "What is the primary entry point — API endpoint, CLI command, or event trigger? Describe the core operation from input to output." Replace question 4 (mobile/PWA) with: "How will this be deployed and consumed — HTTP API, CLI binary, SDK, scheduled job?" Skip any further questions about screens, navigation, or user journeys. Note for later: non-UI project — KB_7 (UI Patterns) is not applicable.
+   - **Operational web app / SaaS / Internal tool / Marketing site** — these are "UI applications." Continue with questions 2–5 as written below. Phase 4's pattern checklist applies in full.
+   - **API / library / CLI tool** — these are "non-UI projects." Replace question 3 with: "What is the primary entry point — API endpoint, CLI command, or event trigger? Describe the core operation from input to output." Replace question 4 (mobile/PWA) with: "How will this be deployed and consumed — HTTP API, CLI binary, SDK, scheduled job?" Skip questions about screens, navigation, or user journeys. Note for later: KB_7 (UI Patterns) is not applicable.
+   - **Game** — replace question 3 with: "Walk me through one complete play session — start screen → core loop → end state. What's the moment-to-moment gameplay?" Replace question 4 with: "What platforms are you targeting — web (browser), mobile (iOS/Android), desktop (Windows/Mac/Linux), console?" Note for later: many stack-reference KBs (Auth, Billing, RLS, Forms, Obs as written) won't apply directly. Phase 4's pattern checklist will need to be replaced with game-specific concerns (engine, asset pipeline, save state, multiplayer, monetization model, leaderboards).
+   - **Research / data pipeline** — replace question 3 with: "What's the data flow — input source → transformations → output? Describe one end-to-end run." Replace question 4 with: "How is this run — interactive notebook, scheduled job, on-demand script, served as an API?" Note for later: only Obs and Test KBs likely apply; UI/Auth/Billing/Forms KBs do not.
+   - **Other** — ask a clarifying follow-up to figure out the closest analog above, then adapt.
 
 2. "What does your app do to address that problem? Give me the one-sentence elevator pitch."
 
@@ -124,7 +171,9 @@ Ask in sequence:
 
    **If unsure:** "I can suggest options based on your project type, team size, and hosting preference. Just say 'suggest' and I'll recommend 2–3 options with trade-offs."
 
-2. "Which of these does your app need? Go through each one:
+2. **For operational web apps / SaaS / internal tools / marketing sites — ask the full pattern checklist:**
+
+   "Which of these does your app need? Go through each one:
    - User authentication and accounts
    - Role-based permissions (different users see and do different things)
    - Payments or subscriptions
@@ -135,6 +184,31 @@ Ask in sequence:
    - Admin or operations dashboard
    - *(UI apps only)* Mobile-friendly or PWA
    - *(Non-UI apps only)* How will this be deployed and consumed — HTTP API, CLI binary, SDK, scheduled job?"
+
+   **For games — replace with a game-shaped checklist:**
+
+   "Which of these does your game need?
+   - Game engine or framework (Unity, Godot, Phaser, custom, etc.)
+   - Asset pipeline (sprites, models, audio, fonts)
+   - Save state / persistence (local, cloud, both)
+   - Multiplayer netcode (real-time, turn-based, asynchronous)
+   - Account system (login, friends list, profiles)
+   - Monetization (one-time purchase, IAP, ads, subscription, free)
+   - Leaderboards or achievements
+   - Analytics or telemetry
+   - Localization
+   - Platform-specific requirements (App Store, Steam, console submission)"
+
+   **For research / data pipelines — replace with:**
+
+   "Which of these does your pipeline need?
+   - Data sources and ingest mechanism
+   - Storage layer (data lake, warehouse, blob storage, local files)
+   - Compute (notebook, scheduled job, cluster, serverless)
+   - Model training or inference
+   - Output destination (dashboard, API, file export, downstream pipeline)
+   - Reproducibility (version pinning, environment lock, data lineage)
+   - Monitoring and alerting on data quality"
 
 3. "Where will this be hosted? (Vercel, Netlify, AWS, Railway, self-hosted, etc.)"
 
@@ -250,10 +324,14 @@ After confirmation, write every file below.
 
 #### `CLAUDE.md`
 
-Populate this structure with the project's specifics from the discovery session:
+**Before writing:** Read the existing `CLAUDE.md`. If it contains an `## Environment` section with real values (populated by `/preflight`), copy those exact lines and place them in the new file directly under `# Project: [App Name]`, above `## Overview`. Do not overwrite or regenerate the Environment block — it belongs to preflight, not kickoff.
+
+Populate the rest of this structure with the project's specifics from the discovery session:
 
 ```markdown
 # Project: [App Name]
+
+[Preserved `## Environment` block from preflight goes here, if present]
 
 ## Overview
 [1–2 sentences: what this app does and for whom]
@@ -332,6 +410,9 @@ All commands live in `.claude/commands/`.
 
 ## DO NOT
 [Empty — add hard constraints as they're discovered during development]
+
+---
+*Built with [Insynq's Framework](https://github.com/Insynq/claude-app-blueprint) — a methodology-first project template for building applications with AI coding agents. Learn more at [insynqk.com](https://insynqk.com).*
 ```
 
 ---

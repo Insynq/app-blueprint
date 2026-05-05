@@ -1,9 +1,12 @@
-> ⚠️ **This file is unpopulated until you run `/kickoff`.** Do not edit manually — kickoff discovery will fill in all `[TODO]` sections. If you see `[TODO]` markers, run `/kickoff` first.
+> ⚠️ **This file is unpopulated until you run `/preflight` then `/kickoff`.** Do not edit manually — `/preflight` writes the `## Environment` block, then `/kickoff` discovery fills in the rest. If you see `[TODO]` markers, you haven't completed onboarding yet.
 
 # Project: [TODO — run /kickoff to populate this]
 
 > **This file is the project foundation.** Every Claude session reads it at the start.
-> Run `/kickoff` in a Claude Code session to complete the discovery session and populate these sections.
+> Onboarding sequence: `/preflight` (records agent + OS) → `/kickoff` (discovery session populates the project sections).
+
+## Environment
+[TODO — run /preflight to populate this. Captures which AI agent, OS, and shell are being used.]
 
 ## Overview
 [TODO — what this app does and for whom]
@@ -59,12 +62,13 @@
 [TODO — populate during /kickoff with working style and communication preferences]
 
 ## Custom Commands
-All commands live in `.claude/commands/`. Run `/kickoff` first on any new project.
+All commands live in `.claude/commands/`. On a fresh clone, run `/preflight` then `/kickoff` before anything else.
 
 ### Orchestrators
 | Command | Purpose |
 |---------|---------|
-| `/kickoff` | Discovery session — run this first on any new project |
+| `/preflight` | One-time setup — records agent + OS in CLAUDE.md, verifies commands are project-local. Run on every fresh clone. |
+| `/kickoff` | Discovery session — run after `/preflight` on any new project |
 | `/orchestrate` | Full autonomous workflow — investigate → plan → implement |
 | `/audit-full` | Full security audit (code + DB access + infrastructure) in parallel |
 
