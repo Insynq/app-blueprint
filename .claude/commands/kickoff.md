@@ -224,6 +224,45 @@ Ask in sequence:
 
 ---
 
+## Local-Dev Tooling Recommendations
+
+**Goal:** Surface high-leverage CLI tools and local-dev dependencies that measurably speed up iteration for the patterns this project will use.
+
+Present this between Phase 4 and Phase 5. Frame it as: "Before we get to working style, here are some tools that will measurably speed up dev for what you're building. These are recommendations, not mandates — install what fits your stack, skip what doesn't."
+
+### Always-recommend (Tier 1 — broadly applicable, low setup cost)
+
+Filter by what the user said in Phase 4 — only present items relevant to their stack.
+
+- **Docker Desktop** — Foundation for local Supabase (`supabase start`) and any service that's easier to run containerized. The killer feature for AI-assisted development: Claude can set up DB state directly (seed users, create test fixtures, simulate edge cases) without you clicking through the UI. Removes the human bottleneck on smoke testing. Recommend the desktop app over CLI-only, especially when juggling multiple projects.
+- **Supabase CLI** — Migrations, type generation, edge function deploys, local dev DB. Required for most workflows in this template if Supabase is in the stack.
+- **Vercel CLI** — `vercel env pull` syncs prod/preview env vars to `.env.local` (kills env-drift bugs), `vercel dev` mirrors edge runtime locally, `vercel logs` tails prod from the terminal. Recommend if hosting is Vercel.
+- **GitHub CLI (`gh`)** — Used by `/ship`, but worth installing for `gh run watch`, `gh pr checks`, `gh pr view --web`. Lets agents act on PRs end-to-end.
+- **pnpm** (or bun) — Faster installs, shared package store across projects. Compounds across the multi-repo workflows this template encourages.
+- **direnv** — Auto-loads `.env` per directory. Eliminates "wrong env vars active" bugs.
+
+### Conditionally-recommend (Tier 2 — only present if Phase 4 indicated relevance)
+
+- **Stripe CLI** *(if billing is in scope)* — `stripe listen` forwards webhook events to localhost with auto-rotated signing secrets; `stripe trigger` fires test events on demand. Pair with test-mode keys. Turns billing dev from painful to fine. Full setup details live in `docs/Bill KBs/BILL_KB_00_Index.md`.
+- **Playwright with `npx playwright codegen`** *(if E2E tests are in scope)* — record a user flow in a browser, get a working test out the other end. The codegen makes Playwright cheap enough to use during dev, not just at the end.
+- **mkcert + cloudflared (or ngrok)** *(if integrating OAuth callbacks, Twilio, Slack, or any third-party that can't reach localhost)* — local HTTPS + public tunnels. Not needed for Stripe (Stripe CLI handles its own tunneling).
+- **pgcli** *(if iterating on ad-hoc SQL during debugging)* — better Postgres REPL than the Studio UI: autocomplete on schemas/columns, syntax highlighting.
+- **act** *(if iterating on GitHub Actions workflows)* — runs GitHub Actions locally in Docker. Saves push-CI-fail-fix-push cycles.
+
+### KB-specific tools (Tier 3)
+
+If the user's stack pulls in OBS, JOB, or BILL KB families later, additional CLIs (Sentry CLI, Inngest CLI, Trigger.dev CLI) are surfaced in those KBs' index files. No need to set them up at kickoff time.
+
+### How to present this
+
+After listing the tier 1 items relevant to their stack and any tier 2 items that match their answers, ask: **"Want a one-line `brew install` script for the tier 1 tools that fit your stack? Or are you good to install as you go?"**
+
+If yes, generate a platform-specific install command — `brew install` for macOS (the OS comes from `/preflight`'s populated `## Environment` block in `CLAUDE.md`), `apt`/`dnf` equivalents for Linux, `winget`/`choco` for Windows. Show the script for the user to run; do not execute it for them.
+
+If "good to go" or "skip", just move to Phase 5.
+
+---
+
 ## Phase 5 — Working Style
 
 **Goal:** Seed project memory so future Claude sessions don't need to re-establish how to work with this person.
@@ -366,6 +405,7 @@ Examples:
 - `KB_7_UI_Patterns.md`: UI patterns and component conventions
 - `KB_8_Current_State.md`: Current phase and active tracking
 - `smoke-tests-pending.md`: **Single source of truth** for outstanding manual smoke tests with stable IDs. When asked about ship-readiness or "what's left to verify," point here — do not re-list tests in commits, PRs, or chat.
+- `MULTI_AGENT_WORKFLOW.md`: Optional methodology — PM + worker context-window pattern for multi-threaded work where the user stays in the strategic seat.
 
 **Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
 - `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.

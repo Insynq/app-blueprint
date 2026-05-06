@@ -21,6 +21,17 @@ These files are for Claude. Principles-only docs fail at implementation time. Ev
 
 ---
 
+## Local-dev tooling
+
+**Stripe CLI** (`brew install stripe/stripe-cli/stripe`, then `stripe login`) is the single biggest dev-velocity unlock for billing work. Two commands matter:
+
+- `stripe listen --forward-to localhost:3000/api/webhooks/stripe` — forwards live test-mode webhook events to localhost. Auto-rotates the signing secret on each session; copy it into `STRIPE_WEBHOOK_SECRET` for the run.
+- `stripe trigger checkout.session.completed` (or any other event name) — fires a synthetic test event on demand. Lets you exercise webhook handlers without going through real Checkout flows.
+
+Pair with test-mode keys (`STRIPE_SECRET_KEY=sk_test_...`). Without the CLI, billing dev is push-deploy-test-cycle. With it, you iterate on webhook handlers in seconds — and Claude can drive both `stripe trigger` and DB-state setup directly without UI clickthrough.
+
+---
+
 ## Cross-cutting rules that apply everywhere
 
 **Always:**

@@ -19,6 +19,13 @@ These files are for Claude. Principles-only docs fail at implementation time. Ev
 
 ---
 
+## Local-dev tooling
+
+- **Sentry CLI** (`brew install getsentry/tools/sentry-cli`, then `sentry-cli login`) — release tracking and source-map upload. **Source maps are mandatory in production**: without them, stack traces are minified and useless for debugging. Wire into CI: `sentry-cli releases new $VERSION` → `sentry-cli sourcemaps upload --release=$VERSION ./build` → `sentry-cli releases finalize $VERSION`. The `withSentryConfig` Webpack plugin handles this automatically when `SENTRY_AUTH_TOKEN` is set in the build environment — manual CLI use is for edge cases (custom build pipelines, non-Next.js services).
+- **Axiom CLI** (`npm install -g @axiomhq/cli`) — query logs from the terminal during incident response. Faster than the web UI for repeated queries (`axiom query "['vercel'] | where status >= 500 | take 50"`). Useful for `OBS_KB_1` log triage when an alert fires.
+
+---
+
 ## Cross-cutting rules that apply everywhere
 
 **Always:**

@@ -19,6 +19,17 @@ These files are for Claude. Principles-only docs fail at implementation time. Ev
 
 ---
 
+## Local-dev tooling
+
+If you're using Trigger.dev or Inngest (`JOB_KB_4`), running their local dev servers is non-negotiable. The alternative is push-deploy-debug, which makes iteration painful.
+
+- **Trigger.dev CLI** (`npx trigger.dev@latest dev`) — local dev server that mirrors the production runtime. Auto-discovers task definitions in your project; logs show task lifecycle (queued → running → succeeded/failed). Hot-reloads on save.
+- **Inngest CLI** (`npx inngest-cli@latest dev`) — same role for the Inngest path. Runs alongside `next dev`; auto-discovers function definitions; the dashboard at `localhost:8288` shows event flow and step-by-step execution traces.
+
+For pg_cron jobs and Postgres queue tables (`JOB_KB_1`–`3`), no extra CLI is needed — work directly in the local Supabase DB via `supabase start` (Docker-backed). Claude can seed queue rows, advance `available_at` timestamps, and exercise worker logic without UI involvement.
+
+---
+
 ## Cross-cutting rules that apply everywhere
 
 **Always:**
