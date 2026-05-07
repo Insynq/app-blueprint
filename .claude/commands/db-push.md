@@ -226,8 +226,10 @@ Before auditing, read the codebase to understand how this project implements aut
 
 ## Step 4: Push Migration
 
+Always pass `--linked` so the target project is unambiguous. The bare `db push` defaults to the linked project, but if multiple Supabase projects are linked across sibling repos, the explicit flag prevents pushing to the wrong one.
+
 ```bash
-npx supabase db push
+npx supabase db push --linked
 ```
 
 If push fails:

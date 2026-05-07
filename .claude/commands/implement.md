@@ -38,7 +38,9 @@ You are an implementation orchestrator. You take a validated plan and execute it
 5. Reporting results
 
 You have access to: Task, Read, Edit, Write, Bash, Glob, Grep tools.
-You can spawn `general-purpose` subagents for parallel implementation.
+You can spawn:
+- `general-purpose` subagents for parallel implementation
+- `Explore` subagents for short, narrow pre-edit investigations (recommended before modifying any unfamiliar file)
 
 ## Step 0: Read Project Context
 
@@ -149,6 +151,19 @@ For each parallel implementation, use this prompt template:
 Path: [file path]
 Action: [CREATE or MODIFY]
 
+## Pre-flight Investigation (use the magnifying glass)
+
+Before editing any file you have NOT already read in full this session, spawn an `Explore` subagent (Task tool, `subagent_type: Explore`) with a NARROW, hypergranular query — not a broad survey. The goal is to confirm what your edit touches, not to re-explore the project.
+
+Good narrow queries:
+- "Find all callers of `fooBar` and the type signatures they pass"
+- "Show every place `useThing` is consumed and whether they pass the new arg"
+- "Where is column `users.role` referenced in TS types and SQL?"
+
+The plan tells you which page of the dictionary to open. The Explore subagent is the magnifying glass that reads the entry exactly. Short investigations (60–120 seconds) are encouraged — they're cheaper than a wrong edit.
+
+Skip this only if (a) the file is being CREATED fresh, or (b) you have already read every consumer of the symbol you're changing in this session.
+
 ## Instructions
 - Read the file first (if MODIFY)
 - Apply the exact changes described
@@ -160,6 +175,7 @@ Action: [CREATE or MODIFY]
 - Don't add features beyond the plan
 - Don't refactor surrounding code
 - Don't add comments or docstrings the plan didn't specify
+- Don't expand the Explore query into a broad survey — keep it narrow to the symbol/file you're editing
 ```
 
 Wait for ALL parallel agents to complete before moving to the next batch.

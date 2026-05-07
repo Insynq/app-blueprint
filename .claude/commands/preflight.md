@@ -79,7 +79,33 @@ If an `## Environment` section already exists (preflight has been run before), u
 
 Use today's actual date for `Captured`.
 
-### Step 5 — Confirm and hand off
+### Step 5 — Verify Supabase link (skip if Supabase isn't in scope)
+
+If `supabase/config.toml` exists at the project root, the project uses Supabase and must be linked to a remote project before `/db-push` can run.
+
+Detection:
+
+```bash
+test -f supabase/config.toml && echo "supabase project detected"
+```
+
+If detected, check link status:
+
+```bash
+npx supabase projects list 2>&1 | grep -E "●|LINKED" || echo "NOT_LINKED"
+```
+
+If not linked, read the `project_id` from `supabase/config.toml` and instruct the user to run:
+
+```bash
+npx supabase link --project-ref <project_id_from_config>
+```
+
+If `project_id` is missing from `config.toml` or set to a placeholder, the user must get the ref from the dashboard at app.supabase.com → Project Settings → General. Do not guess or fabricate a ref.
+
+Don't auto-run the link — it requires the user's project access token. Just report the exact command they need to paste.
+
+### Step 6 — Confirm and hand off
 
 Print a single short summary:
 
@@ -89,6 +115,7 @@ Preflight complete.
 - OS: <name>
 - Shell: <name>
 - Commands: <N> found at .claude/commands/
+- Supabase: <linked to <ref> | not linked — run: npx supabase link --project-ref <id> | not in scope>
 
 Next:
 - Claude Code → run /kickoff
