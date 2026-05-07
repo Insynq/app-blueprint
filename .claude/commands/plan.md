@@ -52,6 +52,7 @@ All recommendations must fit the existing project. Don't introduce patterns that
 - What components/files are involved?
 - Are there existing patterns to follow?
 - What constraints apply?
+- **Earned vs. assumed scope-out:** For every "out of scope," "existing behavior preserved," or "verifiable later" assumption, classify it. Earned = "I confirmed X works." Assumed = "I couldn't confirm X — building anyway." Mark every assumed scope-out as a dependency that must be verified before or during implementation. See `docs/LESSONS.md` `[PROCESS-1]`.
 
 ### 2. Identify Affected Areas
 Search the codebase for:

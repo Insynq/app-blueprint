@@ -116,6 +116,25 @@ If `true`, a library (commonly `react-remove-scroll`, used inside Radix Dialog/S
 
 ---
 
+## Process & Verification Patterns
+
+### [PROCESS-1] Earned vs. assumed scope-out
+
+**Rule:** When labeling something "out of scope," "verifiable later," "existing behavior preserved," "separate concern," or "trust the system," classify it as **earned** or **assumed**. Earned scope-out = "I confirmed X works; we can build on it." Assumed scope-out = "I couldn't confirm X; let's build anyway." Only earned scope-out is engineering. Assumed scope-out is hope wearing engineering's clothes.
+
+**Why:** During a remediation, a "$25 fee fires" verification kept resisting clean answers. Each rephrasing — "$25 fee fires?" → "fee fires somewhere?" → "existing behavior preserved?" → "trust the system?" — made the question easier to dismiss but didn't get closer to knowing. Had we plowed ahead, we'd have shipped activation hooks attached to a payment flow that wasn't actually firing — then spent days debugging the new code when the bug was upstream of everything we wrote. The pause cost was hours; the retrofit cost would have been days plus a confidence hit on the whole architecture.
+
+**How to apply:**
+
+1. **When a verification keeps resisting, expand the question, don't shrink it.** The natural impulse is to shrink the question until it's tractable ("does the fee fire?" → "is the system broadly working?"). The correct move is the opposite — expand the investigation until the question can actually be answered. Rephrasing toward dismissibility is the warning sign.
+2. **Treat "I couldn't find X" as a fact about your search, not about reality.** When grep doesn't show something, the question is "what kind of thing does grep miss?" — not "this thing must not exist." The same applies to read-only investigation across files, services, and external systems.
+3. **Domain-owner intent is verification-grade data.** When the user says "this was working before," that's a load-bearing claim that should flip the posture from "probably fine" to "probably broken until I prove otherwise." Treat it as one of the few signals that beats grep evidence.
+4. **Pause cost < retrofit cost, almost always.** The only exception is genuine deadline pressure — and even then, the retrofit usually costs more than the deadline saves.
+
+Trigger phrases that should make you stop and verify: *"out of scope," "existing behavior preserved," "verifiable later," "separate concern," "trust the system," "probably fine."*
+
+---
+
 ## How to Add a New Entry
 
 Copy this template and append to the relevant section:
@@ -130,4 +149,4 @@ Copy this template and append to the relevant section:
 **How to apply:** When exactly does this apply? What's the trigger that should remind you of this lesson?
 ```
 
-Categories: `UI`, `DATA`, `INT`, `DB`, `ARCH` (architecture/design patterns)
+Categories: `UI`, `DATA`, `INT`, `DB`, `ARCH` (architecture/design patterns), `PROCESS` (planning, verification, scoping discipline)
