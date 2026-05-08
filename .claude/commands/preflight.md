@@ -45,13 +45,13 @@ Also note the shell name (`zsh`, `bash`, `PowerShell`, `cmd`) — useful when bu
 
 Check that `.claude/commands/` exists at the project root and list the `.md` files inside.
 
-The expected 23 commands:
+The expected 25 commands:
 
 ```
-audit-code, audit-full, audit-infra, audit-rls, brainstorm, changelog,
-db-push, debug, gen-component, gen-migration, gen-test, implement,
-investigate, kickoff, orchestrate, plan, plan-review, preflight,
-research, ship, unify, update-kb, visualize
+adopt, audit-code, audit-full, audit-infra, audit-rls, brainstorm,
+changelog, db-push, debug, gen-component, gen-migration, gen-test,
+implement, investigate, kickoff, orchestrate, plan, plan-review,
+preflight, research, ship, unify, update-framework, update-kb, visualize
 ```
 
 If any are missing, list which ones and STOP — do not attempt to recreate them. Tell the user the clone is incomplete and they should re-fetch the repo.

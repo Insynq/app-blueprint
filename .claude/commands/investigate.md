@@ -24,8 +24,7 @@ Spawn a Task with `subagent_type: Explore` using the prompt below.
 ```
 # Codebase Investigation
 
-Investigate: **$ARGUMENTS.issue**
-{{#if component}}Focus area: `$ARGUMENTS.component`{{/if}}
+Investigate: **$ARGUMENTS** (the full argument string — issue description, optionally with focus area)
 
 ## CRITICAL INSTRUCTIONS
 

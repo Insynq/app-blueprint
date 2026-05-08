@@ -7,7 +7,7 @@ Two kinds of KB live in this repo:
 - **Project-state KBs** (`KB_1_Architecture.md`, `KB_7_UI_Patterns.md`, `KB_8_Current_State.md`, `KB_9_Screen_Catalog.md`, `LESSONS.md`, `CHANGELOG.md`, `APP_CONCEPT.md`, `SCOPE.md`) — owned by *this* project, evolve as features ship, populated by `/kickoff` and maintained by `/ship` and `/update-kb`.
 - **Stack-reference KBs** (the nine folders below) — vetted patterns for the chosen stack (Supabase + Next.js App Router + Vercel + Resend + Stripe + Anthropic). They do not change per project; they are read-mostly. Each folder has a `*_KB_00_Index.md` (or `_0_Index`) with a file table, cross-cutting always/never rules, dependencies between files, and a `VERIFY BEFORE SHIPPING` list.
 
-Folders: `Supabase Structure KBs/` (`SB_KB_*`), `UI:UX KBs/` (`UI_KB_*`), `Auth KBs/` (`AUTH_KB_*`), `Job KBs/` (`JOB_KB_*`), `Test KBs/` (`TEST_KB_*`), `Form KBs/` (`FORM_KB_*`), `Obs KBs/` (`OBS_KB_*`), `Bill KBs/` (`BILL_KB_*`), `AI KBs/` (`AI_KB_*`).
+Folders: `Supabase Structure KBs/` (`SB_KB_*`), `UI-UX KBs/` (`UI_KB_*`), `Auth KBs/` (`AUTH_KB_*`), `Job KBs/` (`JOB_KB_*`), `Test KBs/` (`TEST_KB_*`), `Form KBs/` (`FORM_KB_*`), `Obs KBs/` (`OBS_KB_*`), `Bill KBs/` (`BILL_KB_*`), `AI KBs/` (`AI_KB_*`).
 
 For per-folder file listings and rules, open the family's `00_Index`. This file does **not** repeat them.
 
@@ -44,7 +44,7 @@ When you already know which concern you're touching, skip the task table.
 | Concern | Folder(s) |
 |---|---|
 | Tenancy, RLS, multi-org schema, realtime, storage | `Supabase Structure KBs/` |
-| Visual design, components, layout, motion, a11y | `UI:UX KBs/` |
+| Visual design, components, layout, motion, a11y | `UI-UX KBs/` |
 | Login, sessions, JWT claims, MFA, signup, account lifecycle | `Auth KBs/` |
 | Forms, validation schemas, wizards, server actions | `Form KBs/` |
 | Outbox / queues / scheduled jobs / durable execution | `Job KBs/` |

@@ -60,6 +60,40 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.2] - 2026-05-08
+
+First effective release. v0.1.0 was tagged but never published; v0.1.1 published the installer code but the GitHub release tarball was missing the actual framework payload (worker outputs were uncommitted at tag time, and the `docs/UI:UX KBs/` → `docs/UI-UX KBs/` rename hadn't been committed either, so the manifest pointed to a path the tarball didn't have). v0.1.2 ships the full state.
+
+### Added
+
+- All framework-distribution worker outputs:
+  - `.claude/commands/adopt.md` (Worker 3)
+  - `.claude/commands/update-framework.md` (Worker 4)
+  - `bin/init.js`, `lib/*.js`, `package-lock.json` (Worker 2)
+  - `.framework-manifest.json` (Worker 1; was in v0.1.1 but pointed at paths that didn't exist in the tarball)
+- Phase plan + worker plan docs at `docs/plans/framework-distribution/`
+- PM-direct integration: `CLAUDE.md` and `README.md` rewrites, command-table updates, Handlebars `{{#if}}` fixes in `audit-code.md` / `implement.md` / `investigate.md`
+- Smoke tests `FWD-1` through `FWD-8` in `docs/smoke-tests-pending.md`
+
+### Changed
+
+- `docs/UI:UX KBs/` renamed to `docs/UI-UX KBs/` (Windows compatibility — colons break `tar` extraction). All 13 KB files moved.
+- `/preflight` and `/kickoff` now reference 25 commands (was 23 before `/adopt` and `/update-framework`).
+
+### Removed
+
+- N/A
+
+### Renamed
+
+- `docs/UI:UX KBs/` → `docs/UI-UX KBs/` (directory rename — auto-detectable by `/update-framework` rename-pair coalescing once future versions ship)
+
+### Migration Notes
+
+- v0.1.0 and v0.1.1 are non-functional installs. Anyone who ran `npx @insynq/app-blueprint@0.1.1 init` got a mid-write error from the installer's blast-radius enforcement (which is correct behavior — the installer detected the manifest/tarball mismatch and aborted before damage). Re-run with `@latest` (which is now v0.1.2) on a clean target repo. Delete any leftover `.framework-install-staging/` directory from the failed v0.1.1 attempt.
+
+---
+
 ## [0.1.1] - 2026-05-08
 
 Fix to v0.1.0's npm package — bin entry was rejected by npm and stripped during publish, leaving `npx @insynq/app-blueprint init` non-functional. Renamed bin to match the unscoped package name (`app-blueprint`), which is the conventional npm pattern. The user-visible install command is unchanged: `npx @insynq/app-blueprint init` still works because the bin script ignores `init` as an argv pass-through.

@@ -1,6 +1,6 @@
 {
   "name": "@insynq/app-blueprint",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Installer for the @insynq/app-blueprint framework: slash-command + KB scaffold for Claude Code projects.",
   "license": "MIT",
   "author": "Insynq",

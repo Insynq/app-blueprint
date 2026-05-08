@@ -1,503 +1,298 @@
 ---
-description: Run a complete debugging or feature workflow autonomously
+description: Run the PM phase loop — pivot review → brainstorm → plan + audit → worker dispatch → reconciliation → implementation → verification → smoke → ship
 arguments:
-  - name: type
-    description: Workflow type - "debug" or "feature"
-    required: true
-  - name: task
-    description: Description of the bug to fix or feature to implement
-    required: true
+  - name: phase
+    description: Phase slug (e.g., "auth-rework"). Optional — if omitted, infer from current state or ask the user.
+    required: false
 ---
 
-# Workflow Orchestrator
+# PM Phase Loop
 
-**This skill spawns a general-purpose subagent that orchestrates the full workflow.**
+You are the **PM context** for this project. Walk through the phase loop below, pausing at user checkpoints. Read [docs/MULTI_AGENT_WORKFLOW.md](../../docs/MULTI_AGENT_WORKFLOW.md) for the full methodology — protocol, communication modes, concurrency rules, worker plan doc structure.
 
-## Action Required
+**Output discipline:**
+- Speak **layman, decision-oriented** to the user. Translate worker detail to plain English.
+- Speak **technical, dense, precise** when drafting worker prompts (fenced code blocks ready to paste).
+- Append a **status board** to every reply that follows a worker dispatch or result.
 
-Spawn a Task with `subagent_type: general-purpose` using the prompt below. The orchestrator will chain multiple subagents and return a final summary with implementation plan.
+## Step 0: Determine state
 
----
+Read in parallel:
 
-## Subagent Prompt
+- `CLAUDE.md` — tech stack, current phase, conventions
+- `docs/KB_8_Current_State.md` — active phase tracking
+- `docs/SCOPE.md` — V1 scope, out-of-scope
+- If `$ARGUMENTS` is set: `docs/plans/$ARGUMENTS/phase-plan.md` (if it exists) and any `docs/plans/$ARGUMENTS/worker-*.md` files
+- If `$ARGUMENTS` is empty: scan `docs/plans/` for the most recent in-progress `phase-plan.md` (status not "shipped")
 
-```
-# Workflow Orchestrator
+Decide where you are:
 
-Workflow Type: **$ARGUMENTS.type**
-Task: **$ARGUMENTS.task**
+| Phase plan state | Worker docs state | You're at |
+|---|---|---|
+| Doesn't exist | — | Phase 1 (pivot review) |
+| Exists, no worker docs yet | — | Phase 4 (initial worker prompts) |
+| Worker docs drafted, no audit filled | — | Phase 5 (waiting on workers' granular audit) |
+| Worker docs have audits, no PM annotations | — | Phase 6 (PM reconciliation) |
+| Worker docs have PM annotations, no implementation log | — | Phase 7 (waiting on workers' implementation) |
+| Worker docs have implementation logs | — | Phase 8 (PM verification + integration) |
+| Phase 8 done, smokes not added | — | Phase 9 (smoke handoff) |
+| Smokes added, not passed | — | Waiting on user smoke results |
+| Smokes passed | — | Phase 10 (ship) |
 
-## Your Role
+State your read clearly to the user: *"I see we're entering Phase N: [phase name]. Here's what's done and what's next."*
 
-You are an orchestrator agent. You will run a complete workflow by spawning specialized subagents, collecting their results, and producing a final actionable output.
+## Step 1: Pivot review (Phase 1)
 
-You have access to the Task tool and can spawn these subagent types:
-- `Explore` - for codebase investigation, validation, and auditing (read-only)
-- `Plan` - for creating implementation plans (read-only)
+**Skip if phase-plan.md already exists.**
 
-## Step 0: Read Project Context
+- Read the prior phase plan (most recent shipped `phase-plan.md` in `docs/plans/`) and `KB_8_Current_State.md`.
+- Identify what the prior plan documented as "next phase" or "follow-up work."
+- Ask the user, in plain English: *"The prior plan suggested [X] next. Any pivots before we scope?"*
 
-Before spawning any subagents, read the project context:
-- `CLAUDE.md` — primary source of truth for tech stack, patterns, conventions, and current phase
-- `README.md` — if CLAUDE.md is absent
-- Note the project's framework, auth system, database, and key conventions
+If pivots: align with the documented plan. Propose a consolidated scope that captures both. Get user confirmation before proceeding.
 
-Pass this context forward into every subagent prompt below by substituting [PROJECT CONTEXT] with the relevant summary.
+**Output:** consolidated scope statement (1–3 sentences). User confirms or redirects.
 
-## Workflow: Debug
+## Step 2: Brainstorm (Phase 2)
 
-If workflow type is "debug", execute these steps:
+Once scope is confirmed:
 
-### Step 1: Investigation
-Spawn an Explore subagent with this prompt:
-```
-Investigate: [task description]
+- Invoke `/brainstorm` with the consolidated scope.
+- Brainstorm returns findings + open questions.
+- Surface questions to the user in layman framing — *"To finalize the plan, you need to decide: [question]. Options: [a/b/c]."*
+- Wait for answers before continuing.
 
-Project context: [PROJECT CONTEXT]
+## Step 3: Holistic plan + audit (Phase 3)
 
-Be extremely thorough. Trace the full data flow from UI to database.
-Find ALL usages of involved functions/components.
-Verify routing in the app's router config.
-Check for dead code or duplicate implementations.
+Construct the holistic plan covering:
 
-ADDITIONAL SCOPE (do not skip):
-- For any component involved: find ALL parent components that render it.
-  Use Grep to search for the component name across the entire src/ directory.
-- For any shared state (database counters, profile fields, etc.) involved:
-  find ALL code paths that read or write that state. This includes other edge functions,
-  hooks, and DB functions.
-- For any hook involved: find ALL files that import and use it.
-- Check for similar existing patterns that could be reused instead of building new ones.
-  Specifically search src/hooks/, src/components/, src/lib/ for related functionality.
-- For Supabase projects: For any edge function involved, verify it has an entry in
-  `supabase/config.toml`. Missing entries cause 401 at the Supabase gateway before
-  function code executes.
+- Sequencing — what runs before what
+- Collisions — files / subsystems that multiple workers might touch
+- Blast radius — what breaks if a worker fails
+- Worker shape — how many workers, what each owns, parallel vs sequential
 
-Return a structured report with:
-- Data flow trace
-- All usages found (file:line)
-- All parent/consumer components for each involved component
-- All code paths for any shared state
-- Routing verification
-- Root cause (specific file:line)
-- Recommended fix
-```
-
-### Step 2: Planning
-Using the investigation findings, spawn a Plan subagent with this prompt:
-```
-Create implementation plan for: [task description]
-
-Project context: [PROJECT CONTEXT]
-
-Investigation findings:
-[paste findings from step 1]
-
-IMPORTANT: The Plan agent has access to Read, Glob, and Grep tools.
-Read the actual files referenced in the investigation findings to understand
-the code before creating the plan. Do not rely solely on summaries.
-
-Return a structured plan with:
-- Affected files (verified by reading them)
-- Step-by-step changes with specific file:line references
-- New files needed (if any)
-- Database changes needed (if any)
-- Testing checklist
-- Rollback plan
-```
-
-### Step 3: Validate Plan Against Codebase
-Spawn an Explore subagent to validate every assumption in the plan:
-```
-# Plan Validation
-
-You have an implementation plan to validate against the actual codebase.
-
-## Plan to Validate
-[paste full plan from Step 2]
-
-## Validation Protocol
-
-For EACH file the plan references, read the actual file and verify:
-1. The file exists at the stated path
-2. The function/component/hook has the signature the plan describes
-3. The line numbers referenced are approximately correct
-4. The behavior described matches the actual code
-
-For EACH assumption the plan makes, classify as:
-- ✅ CONFIRMED — code matches plan's description
-- ⚠️ ADJUSTMENT NEEDED — close but details differ (state what's different)
-- ❌ WRONG — plan assumes something that isn't true
-
-For EACH modified component, verify:
-- ALL parent components that render it (Grep for component name across src/)
-- ALL files that import it
-- Whether new props need to be threaded through parents
-
-For EACH modified hook, verify:
-- ALL files that call this hook
-- Whether parameter changes are backward-compatible
-
-For EACH modified or new edge function (Supabase projects), verify:
-- ALL frontend code that invokes this function (Grep for the function name)
-- Whether request body changes are backward-compatible
-- That it has a `[functions.<name>]` entry in `supabase/config.toml` (missing = 401)
-
-## Output Format
-### Validated Assumptions
-| # | Assumption | Status | Evidence |
-
-### Missing Parent/Consumer Updates
-| Modified File | Missing Consumer | What It Needs |
-
-### File Name / Path Corrections
-| Plan Says | Actually Is |
-
-### Adjustments Required
-[List specific changes needed to make the plan accurate]
-```
-
-### Step 4: Audit (with Security Checks)
-Spawn an Explore subagent to audit the plan:
-```
-Audit this implementation plan for the codebase:
-
-[paste plan from step 2]
-
-Validation findings that need to be incorporated:
-[paste validation results from step 3]
-
-Check for:
-- Reuse opportunities (existing hooks/utilities in src/hooks/, src/lib/, src/components/)
-- Pattern violations vs established project conventions
-- Anti-patterns
-- Over-engineering (abstractions for single use, hypothetical future requirements)
-
-## Security-Specific Checks (REQUIRED)
-
-1. **Auth/Data Bypass** — For any endpoint that accepts status fields or IDs from the client:
-   Can a user call the endpoint directly with fabricated data to skip validation?
-   What server-side checks prevent this?
-
-2. **Race Conditions on Shared State** — For any counter, flag, or status field modified
-   by the plan: Are there OTHER code paths (existing edge functions, hooks, DB triggers)
-   that also modify this same field? If so, are all paths atomic?
-
-3. **Webhook/Event Idempotency** — For any webhook or event handler that modifies data:
-   What happens if the same event fires twice? Will it double-count, double-charge, or
-   corrupt state?
-
-4. **Hardcoded Values vs Config** — Are there values in the plan (limits, fees, thresholds)
-   that are hardcoded but should come from a configurable source (DB, env vars, tier config)?
-   Check if the same values exist in multiple places that could drift.
-
-5. **Data Exposure** — Do any new columns (especially payment identifiers, tokens, keys)
-   get exposed to the frontend via existing select('*') queries?
-
-Return: APPROVED or NEEDS CHANGES with specific, actionable recommendations.
-For each recommendation, specify exactly what to change in the plan.
-```
-
-### Step 5: Apply Fixes and Compile Final Output
-Based on validation (Step 3) and audit (Step 4) results:
-
-1. **Apply validation corrections** to the plan:
-   - Fix any wrong file names/paths
-   - Add missing parent/consumer updates
-   - Correct any wrong assumptions
-
-2. **Apply audit recommendations** to the plan:
-   - For each "NEEDS CHANGES" recommendation, make the specific change
-   - Update the Files Summary to reflect any new/changed files
-   - Update the Implementation Order if dependencies changed
-   - Add any new verification checklist items
-
-3. **Compile the final output** with ALL fixes applied:
+Save to `docs/plans/[phase-slug]/phase-plan.md`. Use this skeleton:
 
 ```markdown
-## Workflow Complete: Debug
+# Phase: [phase-slug]
 
-### Investigation Summary
-[Key findings - 3-5 bullet points]
+**Status:** drafting | auditing | dispatched | implementing | verifying | smoking | shipped
+**Started:** YYYY-MM-DD
 
-### Root Cause
-**File:** [file:line]
-**Issue:** [description]
+## Scope
+[Consolidated scope statement from Phase 1]
 
-### Implementation Plan (FINAL — validated + audited)
-[The corrected plan with all fixes applied]
+## Brainstorm findings
+[Key findings from Phase 2]
 
-### Files to Modify/Create
-| File | Action | Description |
-|------|--------|-------------|
+## Sequencing + worker shape
+[Numbered worker list with what each owns + parallel/sequential]
 
-### Validation Results
-[Summary: X confirmed, Y adjusted, Z corrected]
+## Collisions / blast radius
+[Files or subsystems that need integration coordination]
 
-### Audit Results
-[APPROVED or summary of changes applied]
+## Audit findings
+[Filled in after /audit-code runs]
 
-### Verification Checklist
-[Testing steps]
+## Smoke tests added
+[Filled in during Phase 9 — list of stable IDs from smoke-tests-pending.md]
 
-### Ready to Implement
-[ ] Yes - proceed with implementation
-[ ] No - needs [specific action]
+## Worker plan docs
+[Filled in during Phase 4 — links to docs/plans/[phase-slug]/worker-N-*.md]
 ```
 
-IMPORTANT: Do NOT return a plan that says "NEEDS CHANGES" — apply the changes yourself
-and return the corrected plan. The user should receive a ready-to-implement plan.
+Run `/audit-code` against the holistic plan. Update phase-plan.md with audit findings.
+
+## Step 4: Initial worker dispatch (Phase 4)
+
+For each worker slice in the plan:
+
+1. Create `docs/plans/[phase-slug]/worker-N-[task-slug].md` using the structure from [MULTI_AGENT_WORKFLOW.md → Worker plan docs](../../docs/MULTI_AGENT_WORKFLOW.md#worker-plan-docs). Fill in: Task, Files involved, Constraints / non-goals. Leave the audit / recommendations / PM annotations / implementation log sections as stubs.
+
+2. Add a link to the worker doc in `phase-plan.md` under "Worker plan docs".
+
+3. **Pick dispatch mode** (see [MULTI_AGENT_WORKFLOW.md → Dispatch modes](../../docs/MULTI_AGENT_WORKFLOW.md#dispatch-modes)). For Phase 5 audits, default to **subagent**. Escalate to separate-window only if: user wants to watch interactively, worker needs full Claude Code tooling, or work is open-ended enough that a single summary won't capture progress.
+
+4. Propose modes to the user in plain English: *"Worker 1 (RLS audit) — subagent. Worker 2 (frontend integration) — subagent. OK or want any in separate windows?"* Wait for approval / override.
+
+5. Dispatch each approved worker:
+
+   **Subagent dispatch (default):** spawn via the Agent tool with `subagent_type: "general-purpose"`. Send subagent calls for parallel workers in a single message. Prompt template:
+
+   ```
+   You are Worker N for the PM phase loop.
+
+   Task: [exact task description]
+   Plan doc: docs/plans/[phase-slug]/worker-N-[task-slug].md
+   Phase: Granular audit (Phase 5)
+
+   Read the plan doc. Perform a granular audit on your slice — file:line specifics, edge cases, integration risks, anything the holistic plan might have missed. Edit the plan doc to fill in the "Granular audit" and "Recommendations" sections.
+
+   Return a brief summary message ("audit complete, see plan doc — N findings, K recommendations, blocker on X") — full detail lives in the plan doc.
+   ```
+
+   **Separate-window dispatch (escalation):** output a fenced code block to the user:
+
+   *"Open Worker N tab, paste this prompt:"*
+
+   ```
+   You are Worker N for the PM context.
+
+   Task: [exact task description]
+   Plan doc: docs/plans/[phase-slug]/worker-N-[task-slug].md
+   Phase: Granular audit (Phase 5)
+
+   Read the plan doc. Perform a granular audit on your slice — file:line specifics, edge cases, integration risks. Fill in the "Granular audit" and "Recommendations" sections.
+
+   When done, format your final reply with one of two headers:
+   - `Worker N | [task] - Response to PM:` (default — audit done or blocked on a PM decision)
+   - `Worker N | [task] - User action required:` (blocked on something only the user can do)
+
+   If the deliverable is a command, script, env var, or text-to-paste, output it as a fenced code block ready to paste — no narration unless I ask.
+   ```
+
+After dispatch:
+
+- **Subagent results return automatically** to the PM as the Agent tool returns. Read the plan doc to see the full audit; the subagent's return message is just a summary.
+- **Separate-window results** require the user to paste the `Response to PM:` block back.
+
+When **all** workers have reported, proceed to Step 6.
+
+## Step 5: Worker granular audit (Phase 5 — handled by workers)
+
+Subagent workers run automatically; their tool calls don't accumulate in PM context. Separate-window workers wait for user paste-back.
+
+If a worker reports a blocker:
+- **Subagent blocker:** PM decides — re-dispatch with a refined prompt, escalate to separate-window, or fix directly.
+- **Separate-window blocker:** translate to layman framing for the user, decide together.
+
+Update the status board as workers wrap.
+
+## Step 6: PM reconciliation (Phase 6)
+
+For each worker plan doc:
+
+- Read the Granular audit + Recommendations sections.
+- Compare against the holistic audit in `phase-plan.md`.
+- Identify gaps: what did the worker see that the holistic plan missed? What did the holistic plan see that the worker didn't?
+
+Then, **edit each worker plan doc directly**: fill the "PM annotations" section with key decisions, reasoning, scope adjustments, integration constraints. Annotations live at the top of the section, prefixed `**PM annotation:**`.
+
+**Pick dispatch mode** for each worker's implementation. Defaults shift by task type:
+
+| Implementation type | Default mode |
+|---|---|
+| Scoped, plan-doc-driven, low surprise | Subagent |
+| Debug-heavy, multi-iteration, user wants to steer | Separate window |
+| Needs running dev server / specific MCP servers | Separate window |
+| Long-running tasks where subagent might time out | Separate window |
+
+Propose modes to the user: *"Worker 1 implementation — subagent (scoped). Worker 2 — recommend separate window (probably needs debug iteration). OK or want to swap?"*
+
+Dispatch each approved worker:
+
+**Subagent dispatch:** spawn via the Agent tool with `subagent_type: "general-purpose"`:
+
+```
+You are Worker N for the PM phase loop. Audit reconciled.
+
+Plan doc: docs/plans/[phase-slug]/worker-N-[task-slug].md
+Phase: Implementation (Phase 7)
+
+Read the PM annotations section — those are the final decisions. Implement per the updated plan. As you work, edit the SAME plan doc to:
+- Mark off items as done
+- Log any blockers in "Implementation log"
+- Capture lessons or gotchas in "Completion notes"
+
+Return a brief summary ("implementation complete, see plan doc — files changed: X, Y, Z; blocker on N if any") — full detail lives in the plan doc.
+```
+
+**Separate-window dispatch:** output a fenced code block:
+
+*"Audit reconciled. Open Worker N tab, paste this prompt:"*
+
+```
+You are Worker N. Audit reconciled.
+
+Plan doc: docs/plans/[phase-slug]/worker-N-[task-slug].md
+Phase: Implementation (Phase 7)
+
+Read the PM annotations section — those are the final decisions. Implement per the updated plan. Edit the SAME plan doc as you work — mark items done, log blockers, capture lessons.
+
+When done, format your reply with the standard headers from MULTI_AGENT_WORKFLOW.md.
+```
+
+## Step 7: Worker implementation (Phase 7 — handled by workers)
+
+Subagent workers run automatically. Separate-window workers wait for user paste-back.
+
+For implementation blockers, same triage as Phase 5: re-dispatch, escalate to separate-window, or fix directly in PM if small enough.
+
+Update the status board as workers wrap.
+
+## Step 8: PM verification + integration (Phase 8)
+
+Once all workers have reported implementation done:
+
+- Read the Implementation log + Completion notes from each worker doc.
+- Verify the integrated result against `phase-plan.md`: gaps, edge cases, integration points.
+- For gaps the PM can fill directly (it has full context), do the work in the PM context. Don't spin up another worker for small integration fixes.
+- Manage commit hygiene — coalesce related commits, split unrelated ones.
+- Update `phase-plan.md` with progress.
+
+If any worker hit a blocker that needs deeper work, dispatch a follow-up worker with a fresh prompt referencing the original plan doc.
+
+## Step 9: Smoke handoff (Phase 9)
+
+- Identify integration-level smoke tests workers couldn't run.
+- Add them to `docs/smoke-tests-pending.md` with stable IDs (e.g., `[phase-slug]-smoke-N`).
+- Output to user as **copy-paste-ready instructions** in a fenced block:
+
+```
+Run these smoke tests:
+
+1. [Stable ID] — [what to do]
+   Expected: [what should happen]
+
+2. ...
+```
+
+**Pause here.** User runs smokes, reports results. If blockers, address them (may dispatch follow-up workers, may fix in PM). Loop until smokes pass.
+
+## Step 10: Ship (Phase 10)
+
+Once smokes pass and blockers clear:
+
+- Update `docs/KB_8_Current_State.md` with phase progress.
+- Update `docs/CHANGELOG.md` (or invoke `/changelog`).
+- In `phase-plan.md`, set status to "shipped" and confirm worker plan doc links are present.
+- Run `/ship` with user approval.
 
 ---
 
-## Workflow: Feature
+## Status board format
 
-If workflow type is "feature", execute these steps:
+Append to every PM reply that follows a worker dispatch or result:
 
-### Step 1: Exploration
-Spawn an Explore subagent to understand the codebase context:
 ```
-Explore the codebase to understand how to implement: [task description]
+Workers in flight:
+- Worker N | [task] — [Phase X — what they're doing]
 
-Project context: [PROJECT CONTEXT]
+Workers wrapped:
+- Worker N | [task] — [Phase X done, integrated/awaiting]
 
-Find:
-- Related existing components/hooks that could be reused or extended
-- Similar patterns already implemented (especially in src/hooks/, src/components/, src/lib/)
-- Files that will need modification
-- Database tables involved (if any)
-- Edge functions or API routes involved (if any)
-
-ADDITIONAL SCOPE (do not skip):
-- For any component that will be modified: find ALL parent components that render it.
-  Use Grep to search for the component name across the entire src/ directory.
-- For any shared state (database counters, profile fields, etc.) that will be modified:
-  find ALL code paths that read or write that state. This includes other edge functions,
-  hooks, and DB functions.
-- For any hook that will be modified: find ALL files that import and use it. Check if
-  adding a parameter will break existing callers.
-- Check for similar existing patterns that could be reused instead of building new ones.
-- For Supabase projects: For any edge function involved, verify it has an entry in
-  `supabase/config.toml`. Missing entries cause 401 at the gateway.
-
-Return a context summary for planning, including:
-- Existing code that can be reused (with file paths)
-- All parent/consumer relationships for components that will change
-- All shared state and its read/write code paths
+Queued sidebars:
+- [Tangential observation captured mid-task]
 ```
 
-### Step 2: Planning
-Spawn a Plan subagent:
-```
-Create implementation plan for: [task description]
-
-Project context: [PROJECT CONTEXT]
-
-Codebase context:
-[paste context from step 1]
-
-IMPORTANT: The Plan agent has access to Read, Glob, and Grep tools.
-Read the actual files referenced in the exploration findings to understand
-the implementation details before creating the plan. Do not rely solely on summaries.
-
-Return a structured plan with:
-- Affected files (verified by reading them)
-- Step-by-step implementation with specific file:line references
-- New files needed (if any)
-- Database changes needed (if any)
-- Implementation order with dependencies
-- Testing checklist
-```
-
-### Step 3: Validate Plan Against Codebase
-Spawn an Explore subagent to validate every assumption in the plan:
-```
-# Plan Validation
-
-You have an implementation plan to validate against the actual codebase.
-
-## Plan to Validate
-[paste full plan from Step 2]
-
-## Validation Protocol
-
-For EACH file the plan references, read the actual file and verify:
-1. The file exists at the stated path
-2. The function/component/hook has the signature the plan describes
-3. The line numbers referenced are approximately correct
-4. The behavior described matches the actual code
-
-For EACH assumption the plan makes, classify as:
-- ✅ CONFIRMED — code matches plan's description
-- ⚠️ ADJUSTMENT NEEDED — close but details differ (state what's different)
-- ❌ WRONG — plan assumes something that isn't true
-
-For EACH modified component, verify:
-- ALL parent components that render it (Grep for component name across src/)
-- ALL files that import it
-- Whether new props need to be threaded through parents
-
-For EACH modified hook, verify:
-- ALL files that call this hook
-- Whether parameter changes are backward-compatible
-
-For EACH modified or new edge function (Supabase projects), verify:
-- ALL frontend code that invokes this function
-- Whether request body changes are backward-compatible
-- That it has a `[functions.<name>]` entry in `supabase/config.toml` (missing = 401)
-
-## Output Format
-### Validated Assumptions
-| # | Assumption | Status | Evidence |
-
-### Missing Parent/Consumer Updates
-| Modified File | Missing Consumer | What It Needs |
-
-### File Name / Path Corrections
-| Plan Says | Actually Is |
-
-### Adjustments Required
-[List specific changes needed to make the plan accurate]
-```
-
-### Step 4: Audit (with Security Checks)
-Spawn an Explore subagent to audit:
-```
-Audit this implementation plan:
-
-[paste plan from step 2]
-
-Validation findings that need to be incorporated:
-[paste validation results from step 3]
-
-Check for:
-- Reuse opportunities (existing hooks/utilities)
-- Pattern alignment with existing code
-- Anti-patterns
-- Over-engineering
-- Security considerations (RLS if DB changes)
-
-## Security-Specific Checks (REQUIRED)
-
-1. **Auth/Data Bypass** — For any endpoint that accepts status fields or IDs from the client:
-   Can a user call the endpoint directly with fabricated data to skip validation?
-   What server-side checks prevent this?
-
-2. **Race Conditions on Shared State** — For any counter, flag, or status field modified
-   by the plan: Are there OTHER code paths (existing edge functions, hooks, DB triggers)
-   that also modify this same field? If so, are all paths atomic?
-
-3. **Webhook/Event Idempotency** — For any webhook or event handler that modifies data:
-   What happens if the same event fires twice? Will it double-count, double-charge, or
-   corrupt state?
-
-4. **Hardcoded Values vs Config** — Are there values in the plan (limits, fees, thresholds)
-   that are hardcoded but should come from a configurable source (DB, env vars, tier config)?
-   Check if the same values exist in multiple places that could drift.
-
-5. **Data Exposure** — Do any new columns (especially payment identifiers, tokens, keys)
-   get exposed to the frontend via existing select('*') queries?
-
-Return: APPROVED or NEEDS CHANGES with specific, actionable recommendations.
-For each recommendation, specify exactly what to change in the plan.
-```
-
-### Step 4.5: Explicit Select Audit
-
-For any plan step that adds columns to a database table, spawn an Explore subagent:
-```
-# Explicit Select Audit
-
-The plan adds these columns to these tables:
-[list table + column additions from the plan]
-
-For EACH table, search the entire codebase for:
-supabase.from('<table_name>').select(
-
-For each query found:
-1. Does it use explicit column lists or select('*')?
-2. If explicit: does it need the new column(s) added?
-3. Report the file, line number, and whether it needs updating
-
-Return:
-### Queries to Update
-| File | Line | Table | Current Select | Needs New Columns |
-```
-
-Add any missing select updates to the plan.
-
-### Step 5: Apply Fixes and Compile Final Output
-Based on validation (Step 3), audit (Step 4), and select audit (Step 4.5) results:
-
-1. **Apply validation corrections** to the plan:
-   - Fix any wrong file names/paths
-   - Add missing parent/consumer updates
-   - Correct any wrong assumptions
-
-2. **Apply audit recommendations** to the plan:
-   - For each "NEEDS CHANGES" recommendation, make the specific change
-   - Update the Files Summary to reflect any new/changed files
-   - Update the Implementation Order if dependencies changed
-   - Add any new verification checklist items
-
-3. **Apply select audit findings** to the plan:
-   - Add select query updates to the appropriate batch
-
-4. **Compile the final output** with ALL fixes applied:
-
-```markdown
-## Workflow Complete: Feature
-
-### Codebase Context
-[Key findings about existing patterns and reuse opportunities]
-
-### Implementation Plan (FINAL — validated + audited)
-[The corrected plan with all fixes applied]
-
-### Files to Modify/Create
-| File | Action | Description |
-|------|--------|-------------|
-| ... | Modify/Create | ... |
-
-### Database Changes
-[If any - otherwise "None"]
-
-### Validation Results
-[Summary: X confirmed, Y adjusted, Z corrected]
-
-### Audit Results
-[APPROVED or summary of changes applied]
-
-### Verification Checklist
-[Testing steps]
-
-### Ready to Implement
-[ ] Yes - proceed with implementation
-[ ] No - needs [specific action]
-```
-
-IMPORTANT: Do NOT return a plan that says "NEEDS CHANGES" — apply the changes yourself
-and return the corrected plan. The user should receive a ready-to-implement plan.
+If no workers are in flight (e.g., between phases), just show wrapped + sidebars.
 
 ---
 
-## Important Instructions
+## Hard rules
 
-1. **Read project context first** — Step 0 is not optional. Pass that context into every subagent.
-2. **Chain the subagents** — wait for each to complete before starting the next
-3. **Pass context forward** — each step builds on previous findings
-4. **Apply all fixes** — the final plan must incorporate validation corrections AND audit recommendations
-5. **Be concise** — your final output should be actionable, not verbose
-6. **Flag blockers** — if any step reveals a blocker, stop and report it
-7. **Don't implement** — your job is to investigate, plan, validate, audit, and compile — not write code
-```
-
----
-
-## After Orchestrator Returns
-
-The orchestrator will return a complete workflow summary with a validated and audited plan.
-
-1. **If "Ready to Implement: Yes"** → proceed with `/implement`
-2. **If "Ready to Implement: No"** → address the specific blocker mentioned
-3. The plan should already have all audit fixes applied — no manual fix-up needed
+1. **Never pivot mid-task.** If the user surfaces a tangential observation, catalog it in the status board's sidebars section. Surface the catalog when the active task wraps.
+2. **Never paste worker reports verbatim to the user.** Translate to layman, decision-oriented framing.
+3. **Never spin up a worker for trivial integration fixes** the PM can do in 2 minutes with full context.
+4. **Cap concurrency at ~2 workers** unless you can articulate why a third is genuinely independent.
+5. **`/ship` runs from PM only.** Workers implement; the PM commits and pushes.

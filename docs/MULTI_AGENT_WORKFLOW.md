@@ -1,8 +1,6 @@
 # Multi-Agent Workflow — PM & Worker Context Windows
 
-A pattern for staying in the strategic seat while AI agents do the focused execution.
-
-This is **optional methodology** — pick it up when single-context-window work starts feeling cramped, or when you find yourself losing focus on the active task because side observations keep pulling you away.
+The canonical pattern for shipping phases of work in this project: stay in the strategic seat as PM while AI workers execute focused tasks. `/orchestrate` is the entry point.
 
 ---
 
@@ -10,30 +8,228 @@ This is **optional methodology** — pick it up when single-context-window work 
 
 Three roles, one human:
 
-- **PM context window** = strategic lead. One persistent conversation that holds the big-picture goals, reviews the codebase before kicking off work, drafts the exact prompts that start new worker sessions, ingests results from worker sessions, and decides what's next. Critically, it catches sidebar observations and queues them for later instead of pivoting mid-task.
+- **PM context window** = strategic lead. One persistent conversation that holds the big-picture goals, reviews the codebase before kicking off work, drafts the exact prompts that start new worker sessions, ingests results, and decides what's next. Catches sidebar observations and queues them for later instead of pivoting mid-task.
 
-- **Worker context windows** = focused execution. Short-lived conversations that receive a self-contained prompt from the PM, run focused work (often invoking commands like `/implement`, `/debug`, `/orchestrate` to keep their own context lean), and report results in a copy-pasteable form back to the PM.
+- **Worker context windows** = focused execution. Short-lived conversations that receive a self-contained prompt from the PM, work against a dedicated plan doc, and report results in a copy-pasteable form back to the PM.
 
-- **You** = the relay. You copy worker output into the PM, paste PM-drafted prompts into new workers.
+- **You** = the relay. Copy worker output into the PM, paste PM-drafted prompts into new workers.
+
+**The PM phase loop (`/orchestrate`)** is the canonical workflow. The methodology below — identification protocol, communication modes, concurrency rules, setup seeds — is what the loop runs on top of.
 
 ---
 
-## When to use this vs. alternatives
+## Dispatch modes
+
+PM can dispatch a worker two ways. Both modes use the same worker plan doc — the doc is the durable artifact regardless of where the work runs.
+
+### Subagent dispatch (default)
+
+PM spawns the worker as a subagent via the Agent tool. The subagent runs to completion in its own ephemeral context, reads/writes the plan doc as a normal file, and returns a single summary message. PM reads the plan doc to see the full report.
+
+**Why this is the default:** subagent tool calls do **not** accumulate in PM's window — only the final summary does. So spawning a worker as a subagent is *more* context-efficient than running the work directly in PM, and dramatically more efficient than the relay overhead of separate-window dispatch (where the worker's full reply gets pasted back into PM context).
+
+In practice this means: most of the phase loop can run as a single PM context window, with the user just answering questions and approving handoffs. No window-switching for the user.
+
+### Separate-window dispatch (escalation)
+
+PM drafts a copy-paste-ready prompt; user opens a new Claude Code session, pastes, runs the worker, copies the response back. This is the escalation path, used when one of these is true:
+
+- **User wants to watch / steer interactively** — long debug session where decisions emerge as the worker investigates
+- **Worker needs full Claude Code tooling** the subagent can't easily use — specific MCP servers, IDE state inspection, interaction with a running dev server
+- **Work is open-ended enough** that "fire and return one summary" doesn't capture progress — multi-iteration test/fix loops where the user wants to see each step
+- **Subagent would risk timing out** on the work (very long-running tasks)
+
+### How the PM picks
+
+For each worker, PM proposes a mode before dispatching:
+
+> *"Worker 2 — recommend subagent dispatch (scoped audit, read-only investigation). Worker 3 — recommend separate window (long debug loop expected, you'll want to steer). Approve or override?"*
+
+User approves or overrides. PM proceeds.
+
+**Default heuristics:**
+
+| Phase | Recommended mode | Why |
+|---|---|---|
+| Phase 5 (granular audit) | Subagent | Read-only investigation, well-scoped, fast |
+| Phase 7 (implementation, scoped) | Subagent | Plan doc has the spec, subagent executes |
+| Phase 7 (implementation, debug-heavy) | Separate window | User wants to steer iterative diagnosis |
+| Phase 7 (implementation needs dev server / MCP) | Separate window | Subagent tooling limits hurt productivity |
+
+---
+
+## When to use this vs. single-window
 
 | Pattern | Best when |
 |---|---|
-| Single context window | Simple, linear work. Setup overhead exceeds the work itself. |
-| `/orchestrate` | Autonomous batch work — agent decides parallel sub-tasks, you wait for the result. Good for well-scoped feature implementations. |
-| **PM/worker** | Complex, multi-step work where you want to stay in the strategic seat. Reviewing code, deciding what each worker tackles next, holding context across many parallel threads. |
+| Single context window | Simple, linear, one-shot work. Setup overhead exceeds the work itself. A bug fix, a one-file refactor, a doc update. |
+| **PM/worker phase loop** | Anything that crosses files, touches multiple subsystems, or has a documented phase plan. The default for any non-trivial chunk of work. |
 
 PM/worker shines specifically when:
 
-- The work is **exploratory** — you don't know upfront what all the sub-tasks are
+- Work is **exploratory** — you don't know upfront what all the sub-tasks are
 - You want to **course-correct between sub-tasks** without re-explaining context every time
-- You're **prone to chasing sidebars** — the PM context catches them, workers stay focused on their assigned task
-- The codebase is **large enough** that one context window can't hold both strategic and tactical reasoning at once
+- You're **prone to chasing sidebars** — the PM context catches them, workers stay focused
+- The work is **large enough** that one context window can't hold both strategic and tactical reasoning at once
 
-PM/worker is **not** a replacement for `/orchestrate`, `/implement`, or `/debug`. Workers invoke those commands. The pattern is about how you compose multiple agent sessions, not about replacing what each session does.
+If a single window suffices, use one window. The relay overhead is real — only spend it when the strategic/tactical separation pays off.
+
+---
+
+## The phase loop
+
+`/orchestrate` walks the PM through these phases. Most phases have explicit user checkpoints — the PM stops, surfaces a decision or hands off worker prompts, and waits.
+
+### Phase 1: Phase review + pivot consolidation
+
+- PM reads the prior phase plan (`docs/plans/[prior-phase]/phase-plan.md` if exists), `KB_8_Current_State.md`, and any pivot notes the user has surfaced.
+- PM asks the user: *any pivots from the documented plan?*
+- If pivots exist, PM aligns them with the documented plan and proposes a consolidated scope. Get user confirmation before moving on.
+
+**Why this phase:** the plan written at the end of the prior phase is rarely still 100% right by the time you start the next one. Surfacing pivots up front avoids mid-execution scope thrash.
+
+### Phase 2: Brainstorm
+
+- Once scope is crisp, PM invokes `/brainstorm` with the consolidated scope.
+- Brainstorm returns findings + open questions.
+- PM surfaces the questions to the user in layman, decision-oriented framing. Wait for answers before continuing.
+
+### Phase 3: Holistic plan + audit-code
+
+- PM constructs the holistic plan: sequencing, collisions, blast radius, worker shape (how many workers, what each owns, what's parallelizable).
+- PM saves the plan to `docs/plans/[phase-slug]/phase-plan.md`.
+- PM runs `/audit-code` against the holistic plan.
+- PM updates `phase-plan.md` with audit findings.
+
+### Phase 4: Initial worker dispatch (audit round)
+
+For each worker slice:
+
+1. PM creates `docs/plans/[phase-slug]/worker-N-[task-slug].md` with the [worker plan doc structure](#worker-plan-docs) below — task description, files involved, constraints, and stub sections for the worker to fill in.
+2. PM picks a [dispatch mode](#dispatch-modes): subagent (default) or separate window (escalation). For the audit round, almost always subagent.
+3. PM either:
+   - **Subagent dispatch:** spawns the worker via the Agent tool with a prompt that identifies Worker N, points to the plan doc, and asks for granular audit. PM tells the user *"dispatching Worker 2 as subagent for granular audit, will report when done."*
+   - **Separate-window dispatch:** drafts a fenced code-block prompt and outputs to user: *"Open Worker N tab, paste this prompt: ..."*
+
+If multiple workers can run in parallel (≤2 cap) and both are subagent-dispatched, PM spawns them in parallel via the Agent tool.
+
+### Phase 5: Worker granular audit
+
+Each worker (subagent or separate-window):
+
+- Reads its plan doc
+- Performs a granular audit on its slice (deeper than PM's holistic audit — file:line specifics, edge cases, integration risks)
+- Fills the audit + recommendations sections of its plan doc
+
+**Reporting back depends on mode:**
+
+- **Subagent dispatch:** worker returns a single summary message to PM. PM reads the plan doc to see the full audit. No user relay needed.
+- **Separate-window dispatch:** worker ends reply with `Worker N | [task] - Response to PM:` header. User pastes the reply to PM.
+
+### Phase 6: PM reconciliation
+
+- PM analyzes all worker audit reports against its holistic audit.
+- PM brainstorms gaps — what did the workers see that the holistic view missed? What did the holistic view see that workers can't?
+- For each worker plan doc, PM **edits the doc directly** with annotations: key decisions, reasoning, scope adjustments, integration constraints. The annotation lives at the top of the relevant section, prefixed `**PM annotation:**`.
+- For each worker, PM picks the implementation [dispatch mode](#dispatch-modes): subagent if the spec is clear and self-contained, separate-window if iterative debugging or live steering is expected.
+
+### Phase 7: Worker implementation
+
+Each worker (subagent or separate-window):
+
+- Reads its updated plan doc (with PM annotations)
+- Implements the changes
+- Edits the **same plan doc** to mark off completed items, log blockers hit, capture lessons learned
+
+**Reporting back depends on mode:**
+
+- **Subagent dispatch:** worker returns a single summary message to PM. PM reads the plan doc for full implementation log. If the subagent reports a blocker, PM may follow up by re-dispatching, escalating to separate-window, or fixing directly.
+- **Separate-window dispatch:** worker ends reply with `Worker N | [task] - Response to PM:` header. User pastes back.
+
+### Phase 8: PM verification + integration
+
+- PM verifies the integrated result against the holistic plan: gaps, edge cases, missed integration points.
+- For gaps the PM can fill directly (it has full context), the PM does the work itself rather than spinning up another worker.
+- PM manages commit hygiene — coalesces or splits commits as needed.
+- PM updates `phase-plan.md` with progress.
+
+### Phase 9: Smoke tests
+
+- PM identifies integration-level smoke tests workers couldn't run (workers see only their slice; integration smokes need the full picture).
+- PM adds new smoke tests to `docs/smoke-tests-pending.md` with stable IDs.
+- PM hands smoke tests to the user as copy-paste-ready instructions.
+- User runs smokes, reports passes/blockers.
+- PM addresses blockers (may spin up new workers, or fix directly).
+
+### Phase 10: Ship
+
+Once smokes pass and blockers clear:
+
+- PM updates `KB_8_Current_State.md` with phase progress.
+- PM updates `docs/CHANGELOG.md`.
+- PM links worker plan docs as references in `phase-plan.md` (so the phase plan becomes a navigable record of how the work actually went).
+- PM runs `/ship` with user approval.
+
+---
+
+## Worker plan docs
+
+A worker plan doc is a **single living artifact** — plan, audit, PM annotations, implementation log, and completion record all live in one file. PM and worker both write to it, at different phases.
+
+**Location:** `docs/plans/[phase-slug]/worker-N-[task-slug].md`
+
+**Naming examples:**
+
+```
+docs/plans/auth-rework/
+├── phase-plan.md
+├── worker-1-rls-policies.md
+├── worker-2-jwt-claims.md
+└── worker-3-session-rotation.md
+```
+
+**Structure** (PM creates the skeleton, both fill it in):
+
+```markdown
+# Worker N — [Task name]
+
+**Phase:** [phase-slug]
+**Status:** drafted | audited | implementing | done
+
+## Task
+[One-paragraph description of the slice]
+
+## Files involved
+- path/to/file.ts:42 — [what's there, what changes]
+- ...
+
+## Constraints / non-goals
+- [What NOT to touch]
+- [Scope boundaries]
+
+## Granular audit
+[Worker fills this in during Phase 5 — file:line specifics, edge cases, integration risks]
+
+## Recommendations
+[Worker's recommendations after granular audit — what to do, what to skip, alternative approaches]
+
+## PM annotations
+[PM fills this in during Phase 6 — key decisions, reasoning, scope adjustments]
+
+## Implementation log
+[Worker fills this in during Phase 7 — what was done, blockers hit, lessons]
+
+## Completion notes
+[Worker's final notes — anything the PM should know for verification]
+```
+
+**Lifecycle:**
+
+- Created by PM in Phase 4 with skeleton + Task / Files / Constraints filled in.
+- Worker fills Granular audit + Recommendations in Phase 5.
+- PM fills PM annotations in Phase 6.
+- Worker fills Implementation log + Completion notes in Phase 7.
+- After ship, the doc stays in `docs/plans/[phase-slug]/` as a historical record. Don't delete — it's the canonical record of how the work actually went.
 
 ---
 
@@ -41,7 +237,7 @@ PM/worker is **not** a replacement for `/orchestrate`, `/implement`, or `/debug`
 
 Multiple worker tabs get confusing fast — when the PM says "Worker 2 had an issue with the migration" and your eyes have to scan task-name truncations across five tabs to find the right window, you've added overhead. A small naming convention solves this.
 
-**Worker numbering.** The PM assigns sequential numbers to workers as it dispatches them: Worker 1, Worker 2, Worker 3, and so on. The PM tracks which numbers are active.
+**Worker numbering.** PM assigns sequential numbers as it dispatches workers: Worker 1, Worker 2, Worker 3. PM tracks which numbers are active.
 
 **Tab / window naming.** When you open a window for a worker, name it:
 
@@ -49,13 +245,13 @@ Multiple worker tabs get confusing fast — when the PM says "Worker 2 had an is
 Worker N | [short task name]
 ```
 
-Examples: `Worker 1 | Fix RLS on orders`, `Worker 2 | Add Stripe webhook handler`, `Worker 3 | Refactor invoice calc`. The number is for disambiguation; the task name is the human-readable hint.
+Examples: `Worker 1 | Fix RLS on orders`, `Worker 2 | Add Stripe webhook handler`. The number is for disambiguation; the task name is the human-readable hint.
 
 **Worker prompt header.** Every worker prompt the PM drafts opens with:
 
-> You are Worker N for the PM context. Task: ...
+> You are Worker N for the PM context. Task: ... Your plan doc is at `docs/plans/[phase]/worker-N-[task].md`.
 
-**Worker response headers.** Every worker reply ends in a formatted block. There are two possible headers depending on what the worker needs:
+**Worker response headers.** Every worker reply ends in a formatted block. Two possible headers:
 
 ```
 Worker N | [task name] - Response to PM:
@@ -67,107 +263,88 @@ Worker N | [task name] - User action required:
 [clear, sequential instructions for the user — run this command, paste this credential, confirm this destructive change]
 ```
 
-When the user sees `Response to PM:`, they paste the full reply back to the PM. When they see `User action required:`, they act on the instructions first, then report back to the worker. The worker pauses until the user responds — pasting a `User action required:` block to the PM blindly skips a step the user has to do.
-
-This protocol (number, tab name, prompt header, two possible response headers) makes the relay unambiguous. Skip any piece and you'll lose track within an hour.
+When the user sees `Response to PM:`, they paste the full reply back to the PM. When they see `User action required:`, they act first, then report back to the worker. The worker pauses until the user responds.
 
 ---
 
 ## Communication modes
 
-Each role has two modes that switch based on the audience.
-
 **PM context — two modes:**
 
-- **PM → User** (layman). When talking to the user, translate worker detail into plain English, decision-oriented framing: "Worker 2 finished the migration; Worker 3 is still investigating the webhook bug. The decision you need to make: ship Worker 2's work now or wait for 3?" No file paths or function names unless the user asks.
+- **PM → User** (layman). When talking to the user, translate worker detail into plain English, decision-oriented framing: *"Worker 2 finished the migration; Worker 3 is still investigating the webhook bug. The decision you need to make: ship Worker 2's work now or wait for 3?"* No file paths or function names unless the user asks.
 - **PM → Worker** (technical). When drafting worker prompts, talk like a senior engineer to a senior engineer. Dense, precise, file paths, function signatures, constraints. No softening or "why this matters" — workers don't need it.
 
 **Worker context — two modes:**
 
-- **Worker → PM** (default — technical). The PM is a peer. Reply with full file paths, exact error messages, line numbers, test results verbatim. No bloat ("here's a summary of what I did") — just the facts the PM needs to make the next decision.
-- **Worker → User** (only when blocked on user input). Switch to layman, sequential instructions. Use the `User action required:` response header. Provide exact commands as fenced code blocks ready to paste. Wait for the user to confirm before continuing.
-
-**Why two modes:** the audience needs different things. The user is making decisions and shouldn't have to parse stack traces; the PM is making technical synthesis and shouldn't have to translate filler. Same agent, two registers, audience determines which.
+- **Worker → PM** (default — technical). PM is a peer. Reply with full file paths, exact error messages, line numbers, test results verbatim. No bloat ("here's a summary of what I did") — just the facts the PM needs to make the next decision.
+- **Worker → User** (only when blocked on user input). Switch to layman, sequential instructions. Use `User action required:` header. Provide exact commands as fenced code blocks ready to paste. Wait for user confirmation before continuing.
 
 ---
 
 ## Concurrency and the PM status board
 
-**Cap at ~2 workers in flight.** Parallelism only pays when tasks are genuinely independent. For tightly coupled work, the integration cost from three parallel diffs eats the speedup. Default to 1–2 workers; reach for a third only when you can articulate why the tasks can't share a brain.
+**Cap at ~2 workers in flight.** Parallelism only pays when tasks are genuinely independent. For tightly coupled work, integration cost from three parallel diffs eats the speedup. Default to 1–2 workers; reach for a third only when you can articulate why the tasks can't share a brain.
 
-**The PM appends a status board to every user-facing reply.** The PM is the place that holds state, not your head. Format:
+**PM appends a status board to every user-facing reply.** PM holds state, not your head:
 
 ```
 Workers in flight:
-- Worker 2 | Stripe webhook handler — dispatched, awaiting result
+- Worker 2 | Stripe webhook handler — implementing (Phase 7)
 - Worker 3 | Invoice migration — blocked on user input (see Worker 3 tab)
 
 Workers wrapped:
-- Worker 1 | RLS audit — result integrated
+- Worker 1 | RLS audit — implementation done, integrated
 
 Queued sidebars (caught mid-task, deferred):
 - Fix typo in onboarding email (noted during Worker 1)
 - Refactor the order-status enum (noted during Worker 2)
 ```
 
-The board is mandatory on every PM reply that follows a worker dispatch or result. It's how you keep three context windows + one PM straight without losing track.
-
-**Tradeoff:** PM replies get longer. But the PM is exactly the place you should NOT have to remember anything — the longer board is the right trade.
+Mandatory on every PM reply that follows a worker dispatch or result.
 
 ---
 
 ## Setting up the PM
 
-Open a new context window in the project root. Seed it with something like:
+Open a new context window in the project root. The simplest seed is just:
 
-> You are my PM context for [project]. Your job: hold the big picture, review the codebase before drafting prompts, draft self-contained prompts for worker contexts, ingest their results, decide what's next.
->
-> **Two modes:**
-> - When talking to me (the user): plain English, decision-oriented. Translate worker detail into "here's where we are, here's the call you need to make." No file paths or function names unless I ask.
-> - When drafting worker prompts: technical, dense, precise. File paths, function signatures, constraints. No softening or "why this matters" — workers don't need it.
->
-> **Worker dispatch protocol:**
-> - Assign each new worker the next sequential number (Worker 1, 2, 3, ...). Track which numbers are in flight.
-> - Cap concurrency at ~2 in-flight workers unless you can articulate why a third is genuinely independent.
-> - Every worker prompt you draft **must** open with `You are Worker N. Task: ...` and **must** end with: "Format your final reply with one of two headers: `Worker N | [task name] - Response to PM:` (default) or `Worker N | [task name] - User action required:` (if you need the user to do something before proceeding). If the deliverable is a command, script, env var, or text-to-paste, output it as a fenced code block ready to paste — no narration unless I ask."
->
-> **Status board:** Every reply you send me must append a status board showing current worker state — workers in flight, workers wrapped, queued sidebars. I should never have to remember which worker is on what.
->
-> **Sidebars:** When I make a tangential observation mid-task ("hey, I also noticed X"), catalog it in the status board's queued-sidebars section — don't pivot to it. Surface the catalog when the active task wraps.
->
-> Your output is either (a) a ready-to-paste worker prompt, or (b) an analysis of a worker's result + the next step. Don't write code yourself unless the work is small enough that spinning up a worker is overhead.
+> Run `/orchestrate` for [phase name].
 
-Memory entries (`feedback_sidebar_observations.md`, `user_pm_worker_workflow.md`, `feedback_agent_autonomy.md` in `~/.claude/projects/[project]/memory/`) reinforce this — they auto-load into every session in the project, so you don't have to repeat the seed each time once they're in place.
+`/orchestrate` reads the phase loop and drives the PM through it. If you want to customize behavior, the seed prompt template lives in the appendix below.
+
+Memory entries (`feedback_sidebar_observations.md`, `user_pm_worker_workflow.md`, `user_pm_phase_loop.md`, `feedback_agent_autonomy.md` in `~/.claude/projects/[project]/memory/`) reinforce the PM behavior — they auto-load into every session.
 
 ---
 
 ## Setting up a worker
 
-Workers are short-lived. The PM should draft a self-contained prompt that includes:
+> This section covers **separate-window dispatch only**. For subagent dispatch (the default), PM spawns workers via the Agent tool — no manual window setup needed.
 
-- **The Worker N identifier** — opens with `You are Worker N.` so the worker can format its response header correctly (see *Identification protocol* above)
-- **The exact task** — one task per worker; don't pile multiple unrelated things on
-- **All required file paths** — workers should run with as little context-discovery overhead as possible
-- **Constraints and non-goals** — what NOT to touch, scope boundaries
-- **The expected output shape** — e.g., "report a punch list of files changed, in 200 words or less" or "produce the migration SQL for review"
-- **The two-mode rule** — "Default to technical responses for the PM (full file paths, exact errors, no bloat). Switch to layman/sequential mode only when blocked on user input — and use the `User action required:` response header for that case." (see *Communication modes* above)
+Workers are short-lived. PM drafts a self-contained prompt that includes:
+
+- **The Worker N identifier** — opens with `You are Worker N.` so the worker formats its response header correctly
+- **The path to its plan doc** — `docs/plans/[phase]/worker-N-[task].md`
+- **The exact phase the worker is in** — audit round (Phase 5) or implementation (Phase 7)
+- **The two-mode rule** — "Default to technical responses for the PM (full file paths, exact errors, no bloat). Switch to layman/sequential mode only when blocked on user input — use the `User action required:` response header for that case."
 - **The copy-paste rule** — "If the deliverable is a command, script, env var, or text-to-paste, output it as a fenced code block ready to paste — no narration unless I ask."
-- **The response-header instruction** — "Format your final reply with one of two headers: `Worker N | [task name] - Response to PM:` (default — work done or blocked on a PM decision) or `Worker N | [task name] - User action required:` (blocked on something only the user can do)."
+- **The response-header instruction** — "Format your final reply with one of two headers: `Worker N | [task name] - Response to PM:` (default) or `Worker N | [task name] - User action required:` (blocked on something only the user can do)."
 
-Open a new context window, **name the tab `Worker N | [short task name]`**, paste the PM-drafted prompt, run. When the worker finishes:
+Open a new context window, name the tab `Worker N | [short task name]`, paste the PM-drafted prompt, run.
 
-- If the reply has the `Response to PM:` header → copy the full reply (header included) back to the PM.
-- If the reply has the `User action required:` header → act on the instructions first, then report back to the worker. Don't paste this to the PM blindly — there's a step you need to do first.
+When the worker finishes:
+
+- `Response to PM:` → copy the full reply (header included) back to the PM.
+- `User action required:` → act on the instructions first, then report back to the worker. Don't paste this to the PM blindly — there's a step you need to do first.
 
 ---
 
 ## Practical tips
 
-- **One worker, one task.** Don't pile multiple unrelated tasks on a worker — that defeats the purpose. The PM is what keeps the broader plan; workers should be narrow.
-- **PM does the codebase reading.** Workers should run with as little context-discovery as possible — let the PM front-load context into the prompt. Saves worker tokens for execution.
-- **Surface side-channel observations to the PM, not to workers.** "While we were debugging X, I noticed Y" → tell the PM, let it queue Y for after X. The worker stays focused on X.
-- **Use `/ship` from the PM only.** Workers can implement; commits and pushes happen from the seat with the full picture. The PM has the holistic view that makes commit messages accurate.
-- **Don't overuse it.** If the work fits in one window, use one window. The relay overhead (copy/paste between windows) is real — only spend it when the strategic/tactical separation is paying off.
+- **One worker, one task.** Don't pile multiple unrelated tasks on a worker — that defeats the purpose. PM keeps the broader plan; workers stay narrow.
+- **PM does the codebase reading for context.** Workers should run with as little context-discovery overhead as possible — let PM front-load context into the prompt and the plan doc. Saves worker tokens for execution.
+- **Surface side-channel observations to PM, not workers.** "While we were debugging X, I noticed Y" → tell the PM, let it queue Y for after X. Worker stays focused on X.
+- **`/ship` runs from PM only.** Workers can implement; commits and pushes happen from the seat with the full picture.
+- **Don't overuse it.** If the work fits in one window, use one window.
 
 ---
 
@@ -175,8 +352,31 @@ Open a new context window, **name the tab `Worker N | [short task name]`**, past
 
 If you find yourself relaying between windows for a single linear task, you've added overhead with no benefit. Collapse back to one window. The pattern earns its keep when:
 
-- You have ≥3 parallel sub-tasks you want to dispatch independently
+- You have ≥2 parallel sub-tasks you want to dispatch independently
 - You need to review a worker's output before deciding the next step
 - You're holding architectural context that doesn't fit in the same window as tactical execution
 
-Below those thresholds, single-window or `/orchestrate` is faster.
+Below those thresholds, single-window is faster.
+
+---
+
+## Appendix: PM seed prompt (when not using `/orchestrate`)
+
+If for some reason you want to operate as PM without invoking `/orchestrate` (e.g., a phase that doesn't fit the loop), seed the PM with:
+
+> You are my PM context for [project]. Your job: hold the big picture, review the codebase before drafting prompts, draft self-contained prompts for worker contexts, ingest their results, decide what's next.
+>
+> **Two modes:**
+> - When talking to me (the user): plain English, decision-oriented. Translate worker detail into "here's where we are, here's the call you need to make." No file paths or function names unless I ask.
+> - When drafting worker prompts: technical, dense, precise. File paths, function signatures, constraints. No softening.
+>
+> **Worker dispatch protocol:**
+> - Assign each new worker the next sequential number (Worker 1, 2, 3, ...). Track which numbers are in flight.
+> - Cap concurrency at ~2 in-flight workers unless you can articulate why a third is genuinely independent.
+> - Every worker prompt opens with `You are Worker N. Task: ...` and includes the path to its plan doc at `docs/plans/[phase]/worker-N-[task].md`. End every prompt with: "Format your final reply with one of two headers: `Worker N | [task name] - Response to PM:` (default) or `Worker N | [task name] - User action required:` (if you need the user to do something before proceeding). If the deliverable is a command, script, env var, or text-to-paste, output it as a fenced code block ready to paste — no narration unless I ask."
+>
+> **Status board:** Every reply you send me appends a status board showing current worker state — workers in flight, workers wrapped, queued sidebars.
+>
+> **Sidebars:** When I make a tangential observation mid-task, catalog it in queued-sidebars — don't pivot. Surface the catalog when the active task wraps.
+>
+> Your output is either (a) a ready-to-paste worker prompt, or (b) analysis of a worker's result + the next step.

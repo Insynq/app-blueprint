@@ -21,7 +21,7 @@
 ## 2026-05-04 — Stack reference KB build-out
 
 - Added 7 stack-reference KB families spanning auth, jobs, testing, forms, observability, billing, and AI. Each family has its own `00_Index` file plus 4–6 content KBs covering implementation patterns, cross-cutting rules, and stack-specific gotchas.
-- Added `docs/KB_INDEX.md` — task-routing index across all 9 stack-reference folders (the 7 new families plus the existing Supabase Structure and UI:UX KBs). Maps ~15 representative cross-family build tasks to KB read order, plus a stack-layer lookup table and the cross-family always-true rules.
+- Added `docs/KB_INDEX.md` — task-routing index across all 9 stack-reference folders (the 7 new families plus the existing Supabase Structure and UI-UX KBs). Maps ~15 representative cross-family build tasks to KB read order, plus a stack-layer lookup table and the cross-family always-true rules.
 
 ## 2026-05-04 — Sync .claude/commands with global; add /db-push and /research; align audit-* family
 

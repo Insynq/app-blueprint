@@ -27,6 +27,8 @@
 
 ## Reference Documents
 
+**Primary workflow** — `docs/MULTI_AGENT_WORKFLOW.md` is the canonical pattern for shipping any non-trivial chunk of work in this project. PM context drives a phase loop (pivot review → brainstorm → plan + audit → worker dispatch → reconciliation → implementation → verification → smoke → ship), workers execute focused slices in their own sessions. Entry point: `/orchestrate`. Read the workflow doc before starting a phase.
+
 **Project state** (populated during development) — see `/docs` folder:
 - `APP_CONCEPT.md`: Problem statement, users, use cases, success criteria
 - `SCOPE.md`: V1 scope, out-of-scope, known unknowns
@@ -40,7 +42,7 @@
 
 **Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
 - `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.
-- `docs/UI:UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
+- `docs/UI-UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
 - `docs/Auth KBs/AUTH_KB_00_Index.md` — consult for login methods, custom JWT claims, MFA, session lifecycle, signup provisioning, or account management.
 - `docs/Job KBs/JOB_KB_00_Index.md` — consult for outbox processing, scheduled jobs (pg_cron / Vercel Cron), queue tables, or long-running tasks (Trigger.dev / Inngest).
 - `docs/Test KBs/TEST_KB_00_Index.md` — consult for test strategy, RLS testing with pgTAP, JS integration tests, component tests with MSW, Playwright E2E, or testing async patterns (Realtime, outbox, scheduled jobs).
@@ -68,8 +70,10 @@ All commands live in `.claude/commands/`. On a fresh clone, run `/preflight` the
 | Command | Purpose |
 |---------|---------|
 | `/preflight` | One-time setup — records agent + OS in CLAUDE.md, verifies commands are project-local. Run on every fresh clone. |
-| `/kickoff` | Discovery session — run after `/preflight` on any new project |
-| `/orchestrate` | Full autonomous workflow — investigate → plan → implement |
+| `/kickoff` | Discovery session for **greenfield** projects — run after `/preflight` on a new repo |
+| `/adopt` | Discovery session for **existing** projects — populate KBs from observation, audit existing user KBs, merge CLAUDE.md. Run after installer + `/preflight`. |
+| `/update-framework` | Pull canonical framework updates with per-file review and assisted merge for customizations |
+| `/orchestrate` | PM phase loop — pivot → brainstorm → plan + audit → workers → reconcile → implement → smoke → ship. See `docs/MULTI_AGENT_WORKFLOW.md`. |
 | `/audit-full` | Full security audit (code + DB access + infrastructure) in parallel |
 
 ### Planning & Review

@@ -65,7 +65,7 @@ Welcome to app-blueprint — a project template built around a methodology, not 
 **Honest about the bias:** the methodology is universal, but the patterns library skews toward operational web apps and SaaS — auth, RBAC, billing, forms, dashboards, RLS, real-time, that shape of thing. If you're building a game, a library, a CLI tool, or research code, the methodology still applies but several stack-reference KBs and commands (like /audit-rls, /gen-migration) won't be relevant. I'll adapt as we go and skip what doesn't fit.
 
 **What's already on disk:**
-- 23 commands in `.claude/commands/` — kickoff, brainstorm, plan, implement, ship, debug, audits, generators
+- 25 commands in `.claude/commands/` — kickoff, adopt, brainstorm, plan, implement, ship, debug, audits, generators, update-framework
 - Stack-reference KBs in `/docs/` covering Supabase, Auth, UI/UX, Forms, Jobs, Tests, Observability, Billing, AI integration
 - A persistent memory directory at `.claude/memory/` so context carries across sessions
 
@@ -409,7 +409,7 @@ Examples:
 
 **Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
 - `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.
-- `docs/UI:UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
+- `docs/UI-UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
 - `docs/Auth KBs/AUTH_KB_00_Index.md` — consult for login methods, custom JWT claims, MFA, session lifecycle, signup provisioning, or account management.
 - `docs/Job KBs/JOB_KB_00_Index.md` — consult for outbox processing, scheduled jobs (pg_cron / Vercel Cron), queue tables, or long-running tasks (Trigger.dev / Inngest).
 - `docs/Test KBs/TEST_KB_00_Index.md` — consult for test strategy, RLS testing with pgTAP, JS integration tests, component tests with MSW, Playwright E2E, or testing async patterns (Realtime, outbox, scheduled jobs).

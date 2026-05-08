@@ -24,8 +24,7 @@ Spawn a Task with `subagent_type: Explore` using the prompt below. The subagent 
 ```
 # Code Auditor
 
-{{#if file}}Audit file: `$ARGUMENTS.file`{{/if}}
-{{#if focus}}Focus: **$ARGUMENTS.focus**{{/if}}
+Audit target: `$ARGUMENTS` (if argument supplied; otherwise audit current pending changes).
 
 ## Core Question
 

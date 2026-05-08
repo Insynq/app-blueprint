@@ -24,9 +24,7 @@ Spawn a Task with `subagent_type: general-purpose` using the prompt below. The o
 ```
 # Implementation Orchestrator
 
-Plan: **$ARGUMENTS.plan**
-{{#if scope}}Scope: **$ARGUMENTS.scope**{{/if}}
-{{#unless scope}}Scope: **all**{{/unless}}
+Plan + scope: **$ARGUMENTS** (the full argument string — plan path, optionally followed by a scope like "all" / "next" / "1-3" / single step number; default scope when none supplied is "all")
 
 ## Your Role
 
@@ -71,18 +69,13 @@ If the plan cannot be found, STOP and report: "Could not find plan. Please provi
 
 ## Step 2: Determine Scope
 
-{{#if scope}}
-Scope is: $ARGUMENTS.scope
+Parse the scope from `$ARGUMENTS`:
 
-- If "all": implement every step in order
-- If "next": find the first unimplemented step and implement just that one
-- If step range (e.g., "1-3"): implement only those steps
-- If single step (e.g., "5"): implement only that step
-{{/if}}
-
-{{#unless scope}}
-Implement all steps in the plan.
-{{/unless}}
+- If `$ARGUMENTS` is empty or contains no scope hint: **implement all steps** in the plan.
+- If `$ARGUMENTS` contains `all`: implement every step in order.
+- If `$ARGUMENTS` contains `next`: find the first unimplemented step and implement just that one.
+- If `$ARGUMENTS` contains a step range (e.g., `1-3`): implement only those steps.
+- If `$ARGUMENTS` contains a single step number (e.g., `5`): implement only that step.
 
 ## Step 3: Create Dependency Batches
 
