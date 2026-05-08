@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": "1",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "name": "app-blueprint",
   "canonical_url": "https://github.com/Insynq/app-blueprint",
   "github_owner": "Insynq",
@@ -73,7 +73,11 @@
       "LICENSE",
       "README.md",
       "audits/",
-      "docs/AUDIT_FINDINGS.md"
+      "bin/",
+      "docs/AUDIT_FINDINGS.md",
+      "lib/",
+      "package-lock.json",
+      "package.json"
     ]
   },
   "default_action_on_conflict": {

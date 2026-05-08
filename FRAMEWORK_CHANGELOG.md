@@ -60,6 +60,32 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.3] - 2026-05-08
+
+Manifest fix. v0.1.2 install hit a blast-radius rejection on `bin/init.js` because the manifest didn't categorize the npm-package internals (`bin/`, `lib/`, `package.json`, `package-lock.json`). The installer correctly refused to write files outside the framework allow-list. v0.1.3 adds those paths to `excluded` so the installer skips them silently during extraction.
+
+### Added
+
+- N/A
+
+### Changed
+
+- `.framework-manifest.json`: added `bin/`, `lib/`, `package.json`, `package-lock.json` to `excluded` category. These exist in canonical (they're the installer's own code, shipped via npm) but must never be installed into adopter repos.
+
+### Removed
+
+- N/A
+
+### Renamed
+
+- N/A
+
+### Migration Notes
+
+- v0.1.2 install attempts on adopter repos failed mid-write with a blast-radius error. The installer's safety net is working as designed — no files were written. Re-run `npx @insynq/app-blueprint init` against v0.1.3 (delete any `.framework-install-staging/` from the failed attempt first).
+
+---
+
 ## [0.1.2] - 2026-05-08
 
 First effective release. v0.1.0 was tagged but never published; v0.1.1 published the installer code but the GitHub release tarball was missing the actual framework payload (worker outputs were uncommitted at tag time, and the `docs/UI:UX KBs/` → `docs/UI-UX KBs/` rename hadn't been committed either, so the manifest pointed to a path the tarball didn't have). v0.1.2 ships the full state.
