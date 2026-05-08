@@ -197,16 +197,46 @@ This is the single source of truth for outstanding manual verification work. Don
 - `<SECTION>-<TYPE><NUMBER>` when a section has natural sub-groups (happy path / failure / race / etc.): `PW-H1`, `PW-F2`, `PW-W1`.
 - Section codes are short, memorable initials of the feature name. Pick once and don't churn.
 
+## Lanes
+
+Every test must be tagged with a **Lane** at write-time. Lane drives how the test is verified during `/orchestrate` Phase 9 — see [docs/MULTI_AGENT_WORKFLOW.md → Verification workers](MULTI_AGENT_WORKFLOW.md#verification-workers).
+
+| Lane | What it covers | Verification path |
+|---|---|---|
+| `sql` | RLS policies, data-shape, trigger fires, constraint enforcement | If framework prescribes pgTAP (or equivalent), the unit test IS the verification — no separate runner. Status flips on the unit test passing. |
+| `wiring` | UI component data-path correctness — DB → fetcher → component → render condition → handler | Either PM-inline trace (single-file leaf check) or trace-verifier subagent (≥3 files OR crosses state-machine / RLS / server-action boundary). Verifier annotates `Trace verified`; only eyeball pass flips Status. |
+| `visual` | Layout, mobile spacing, color contrast, animation, click feel, copy, discoverability, hover/focus states | Eyeball only. Trace verification is rejected — wrong lane. |
+| `integration` | CLI/installer flows, third-party webhooks, OAuth round-trips, deploy-pipeline artifacts, anything that needs to run-the-binary in a real environment | Manual. No auto-pass mechanism. |
+
+**Lane assignment rules:**
+
+- Author tags Lane at write-time. PM does not retroactively re-tag (except `wiring` → `visual` when the verifier returns `trace-fail / wrong lane`).
+- For `Lane: wiring`, author also names a **hypothesized starting point** (file or component) so PM has the input the verifier needs.
+- A test is one Lane. If a feature has both wiring AND visual concerns, write two tests with separate IDs.
+
 ## Each test must
 
 - Be runnable from setup → expected without re-reading the spec.
 - Have at least one observable in the expected section (UI state, DB row, network call, log line). "Should work" is not an expected.
 - Reference a source commit or spec doc so the test stays linked to its origin.
+- Be tagged with a Lane (sql / wiring / visual / integration). For `wiring`, also name a hypothesized starting point.
 
 ## Each test must NOT
 
 - Cover behavior that's already in unit / integration tests. The catalog is for things automated coverage misses.
 - Leak implementation detail that breaks when the code is refactored. Test what the user / API caller observes, not how it's done.
+
+## Trace verification annotations
+
+A `wiring`-lane test can carry a `Trace verified` annotation from `/orchestrate` Phase 9. This is **never** a status flip — only an annotation that PM reviewed (or a verifier subagent produced) a structured trace report against the test's data path. `Status` stays `Pending` until eyeball pass.
+
+The annotation lives in the per-test table:
+
+```
+| **Trace verified** | 2026-05-07 (Verifier 2) — see docs/plans/<phase>/verifier-2-<smoke-id>.md |
+```
+
+When `/ship` runs, trace-verified-but-eyeball-pending smokes appear in the summary so the eyeball debt stays visible. Annotations >14 days old warn; >30 days block ship until cleared.
 
 ---
 
@@ -223,7 +253,10 @@ When adding the first feature, copy the block below into the "(No pending tests)
 
 | | |
 |---|---|
-| **Status** | Pending |
+| **Status**                    | Pending |
+| **Lane**                      | sql \| wiring \| visual \| integration |
+| **Hypothesized starting point** | <file or component — REQUIRED for wiring lane, omit otherwise> |
+| **Trace verified**            | <date> (<who/which verifier>) — populated during Phase 9 if applicable |
 
 **Setup:** <What state the system needs to be in. Be specific — fixture data, env, account roles.>
 

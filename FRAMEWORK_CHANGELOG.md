@@ -60,6 +60,41 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.4-pre.1] - 2026-05-08
+
+**Pre-release for dogfooding only.** Introduces the verification-workers pattern for `/orchestrate` Phase 9: PM dispatches a trace-verifier subagent (with a 6-clause contract prompt) for `wiring`-lane smokes that meet a complexity gate (≥3 files OR cross a state-machine / RLS / server-action boundary). Verifier reports become inspectable artifacts that surface catalog-vs-code contradictions PM-inline compression hides. Pilot data: 3-smoke run found 100% verdict accuracy + 100% citation accuracy + 2/3 catch rate on test-design bugs PM missed inline.
+
+Also adds Lane field (`sql` / `wiring` / `visual` / `integration`) and `Trace verified` annotation field to the smoke-tests catalog template. `Trace verified` is **never** a status flip — annotations let you ship with pending UI smokes and explicit eyeball-deferred bookkeeping; only an actual eyeball pass flips `Status: Pending` → `Passed`.
+
+`/ship` Step 3.5 now surfaces trace-verified-but-eyeball-pending counts with TTL gates (informational 0–14d, warn 15–30d, block >30d).
+
+### Added
+
+- `docs/MULTI_AGENT_WORKFLOW.md`: new "Verification workers" section (~120 lines) — when-to-dispatch complexity gate, full trace-verifier prompt template (6-clause contract including catalog-vs-code contradiction check), PM judgment guide, verdict semantics (trace-pass / trace-incomplete / trace-fail), what-this-is-NOT clarifications.
+- `docs/smoke-tests-pending.md`: new "Lanes" section, "Trace verification annotations" section, updated section template to include `Lane` + `Hypothesized starting point` + `Trace verified` fields.
+
+### Changed
+
+- `.claude/commands/orchestrate.md`: Phase 9 rewritten as dispatch-by-Lane protocol (9a catalog → 9b verify → 9c judge → 9d handoff → 9e loop). Trace-verifier dispatched via Agent tool with `subagent_type: general-purpose` and concurrency cap of 2.
+- `.claude/commands/implement.md`: Step 6 — when authoring a new smoke, author tags Lane at write-time; for `wiring` lane, author also names a hypothesized starting point.
+- `.claude/commands/ship.md`: Step 3.5 — adds trace-verified-pending count surfacing with TTL (informational ≤14d, warn 15–30d, block >30d). Lists trace-deferred IDs in commit body when the diff annotates new ones.
+
+### Removed
+
+- N/A
+
+### Renamed
+
+- N/A
+
+### Migration Notes
+
+- **No-op for projects that don't use `/orchestrate`.** If you implement work directly without the PM phase loop, the new Phase 9 protocol doesn't trigger and your workflow is unchanged.
+- **For projects with existing pending smokes:** add a `Lane` field to each existing entry (sql / wiring / visual / integration). Most installer-style smokes (CLI flows, OAuth, webhooks) tag as `integration`. Most UI-component smokes tag as `wiring` if they have data-path observables OR `visual` if they're pure layout/contrast/animation. RLS / data-shape smokes covered by pgTAP (or equivalent) tag as `sql` and rely on the unit-test as their verification — no separate harness.
+- **Pilot history:** the SQL-runner pattern was piloted alongside this and rejected for framework adoption (100% confirmatory in a project with pgTAP coverage; duplicate verification mechanisms create busy work). The `sql` lane is preserved in the catalog schema as a hint, but the runner itself is project-local at most. See [project memory: framework adoption needs calibration data].
+
+---
+
 ## [0.1.3] - 2026-05-08
 
 Manifest fix. v0.1.2 install hit a blast-radius rejection on `bin/init.js` because the manifest didn't categorize the npm-package internals (`bin/`, `lib/`, `package.json`, `package-lock.json`). The installer correctly refused to write files outside the framework allow-list. v0.1.3 adds those paths to `excluded` so the installer skips them silently during extraction.

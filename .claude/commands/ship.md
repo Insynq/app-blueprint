@@ -111,8 +111,13 @@ Review the git diff. If the changes introduce new features, patterns, or convent
 If `docs/smoke-tests-pending.md` exists:
 
 1. Read it. Look for sections where every test is `Passed (YYYY-MM-DD)` — collapse those sections in this commit to a one-liner (e.g., `Phase 2 — all 5 tests passed 2026-05-15. See git history for detail.`). Don't batch this across releases; do it now.
-2. Check if the diff introduces behavior that needs new manual verification (UI flows, OAuth, payments, third-party webhooks, migrations, browser-specific bugs, race conditions). If so, propose new entries to add — assign stable IDs following the `<SECTION>-<NUMBER>` or `<SECTION>-<TYPE><NUMBER>` convention, do NOT reuse retired IDs.
+2. Check if the diff introduces behavior that needs new manual verification (UI flows, OAuth, payments, third-party webhooks, migrations, browser-specific bugs, race conditions). If so, propose new entries to add — assign stable IDs following the `<SECTION>-<NUMBER>` or `<SECTION>-<TYPE><NUMBER>` convention (do NOT reuse retired IDs) and tag each with a `Lane` per [smoke-tests-pending.md → Lanes](../../docs/smoke-tests-pending.md#lanes).
 3. If any test in the diff's scope is currently in `Failed` status, STOP and report — do not ship until the failing test is resolved or explicitly deferred.
+4. **Trace-verified-pending count.** Scan for tests with both `Trace verified: <date>` and `Status: Pending`. Today's date is the reference for TTL math.
+   - **0–14 days since trace:** report count in the ship summary as informational. Eyeball debt is fresh.
+   - **15–30 days since trace:** report as a **WARN**. Eyeball debt is aging — list the affected IDs explicitly so the user sees them.
+   - **>30 days since trace:** STOP and report. Do not ship until either (a) eyeball pass is run and `Status` flipped to `Passed`, or (b) the user explicitly authorizes shipping with overdue trace-verified smokes (capture the authorization in the ship commit body).
+5. **Mention trace-deferred IDs in the ship commit body.** When the diff itself trace-verifies smokes (added the annotation in this batch), list the affected IDs in the commit body: "Shipping with `<ID>, <ID>, ...` trace-verified, eyeball pass deferred."
 
 If the file does not exist, skip this step (project hasn't adopted the catalog yet).
 

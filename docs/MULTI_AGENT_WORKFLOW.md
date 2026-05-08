@@ -233,6 +233,125 @@ docs/plans/auth-rework/
 
 ---
 
+## Verification workers
+
+A **verification worker** is a specialized subagent dispatched by PM to produce a structured verification artifact — most commonly a static code trace of a UI smoke's data path. PM judges the artifact; PM does not produce it. Same dispatch mechanism as implementation workers (`general-purpose` subagent via the Agent tool), but the prompt encodes a contract that mandates file:line citations, structured output, explicit caveats, and an honest verdict including a partial-credit option.
+
+The pattern is pilot-validated for trace verification. It generalizes to other verification work where PM compression would lose load-bearing detail: complex PR review, multi-policy RLS audits, dependency-impact analysis.
+
+### When to dispatch (complexity gate)
+
+PM does not dispatch a verifier for every smoke. Below the gate, PM-inline still wins on cost.
+
+**Dispatch a verifier when** the verification work meets either:
+
+- **≥3 files** in the data path (DB → fetcher → component → render condition → handler is typical for any non-trivial wiring smoke)
+- **Crosses a state-machine, RLS, or server-action boundary** — the verification needs to reason across asymmetric concerns
+
+**PM-inline trace when** the smoke is a single-file, single-conditional, leaf-component check. Dispatch tax exceeds the marginal benefit; a 1-sentence inline trace is honestly enough.
+
+### Trace-verifier prompt template
+
+PM dispatches via Agent tool with `subagent_type: "general-purpose"` and this prompt (PM fills the `<...>` placeholders per smoke):
+
+```
+You are Trace-Verifier <N> for the PM phase loop. Your job is to verify a UI smoke's data-path wiring through static code trace and produce a structured report. PM uses your report to decide whether to annotate the smoke as `Trace verified`.
+
+You are NOT verifying:
+- Visual layout, mobile spacing, contrast, animation, click feel
+- Hydration mismatches under specific data shapes
+- Copy, discoverability, hover/focus states
+
+If the smoke is fundamentally about any of those, return verdict = trace-fail with reason "wrong lane — eyeball-only smoke."
+
+## Inputs
+
+- Smoke ID:                <SMOKE_ID>
+- Lane:                    wiring
+- Catalog entry (Setup / Steps / Expected): <paste the relevant block from docs/smoke-tests-pending.md>
+- Hypothesized starting point: <PM's best guess: file or component to start tracing from>
+- Source commit / spec:    <sha or spec doc>
+
+## Your contract — a trace counts ONLY if all six hold
+
+1. **End-to-end path with file:line citations.** Name every hop. "DB query at <file>:<line> → fetcher at <file>:<line> → component at <file>:<line> → render condition at <file>:<line> → handler at <file>:<line>." If you can't follow the path end-to-end, verdict = trace-incomplete. Do not approximate.
+
+2. **Conditionals named with predicate + element.** For every `if (X) <Y/>`, write the predicate AND the element. Don't say "renders the badge"; say "renders <Badge variant='secondary'> at TasksTab.tsx:88 when row.is_private === true."
+
+3. **Pattern cross-references when applicable.** If new code mirrors an existing eyeball-verified component, name the reference: "mirrors <component> at <path>:<line>." This is force-multiplier evidence — call it out. If it's net-new wiring with no analog, say so.
+
+4. **Per-test caveats, not boilerplate.** List what THIS trace did NOT verify FOR THIS smoke. If your caveats look identical across multiple smokes, you're being lazy — be specific.
+
+5. **Honesty bias.** False negatives ("I'm not sure") cost less than false positives. When in doubt, downgrade to trace-incomplete and tell PM exactly what you couldn't verify.
+
+6. **Catalog-vs-code contradiction check.** If the smoke's Setup or Steps presuppose a state the code's preconditions don't allow (read-only flags, filter clauses, gated routes, role gates, etc.), surface the contradiction in caveats with file:line of the contradicting precondition. The catalog can be wrong; flag it when it is.
+
+## Verdict semantics — choose precisely
+
+- **trace-pass** — Path verified end-to-end, conditionals named, caveats specific, no doubts about wiring correctness, no catalog-vs-code contradictions found.
+- **trace-incomplete** — Path is partially traced; you couldn't follow some hop with confidence (dynamic dispatch, prop drilling through 5+ layers, framework magic). Wiring may be correct but YOU couldn't verify it statically. PM falls back to eyeball.
+- **trace-fail** — You followed the path and found a wiring bug, OR the smoke is fundamentally eyeball-only and shouldn't be in this lane.
+
+## Output format — return exactly this shape
+
+Verifier <N> | <smoke-id> — Trace report
+
+Path traced:
+- <file>:<line> — <what happens here>
+- ...
+
+Conditionals verified:
+- <file>:<line> — `if (<predicate>) <element>` — verified <branch behavior>
+- ...
+
+Pattern cross-references:
+- <new>:<line> mirrors <existing>:<line>  (or: "none — net-new wiring")
+
+Caveats — what this trace did NOT verify (specific to this smoke):
+- <caveat 1>
+- <caveat 2>
+
+Catalog-vs-code contradictions (if any):
+- <smoke step / setup line> contradicts <file>:<line> — <one-line explanation>
+
+Verdict: trace-pass | trace-incomplete | trace-fail
+Reason (required if not pass): <one line>
+
+Residual eyeball list (what a human still needs to look at):
+- <observable 1>
+- <observable 2>
+
+## Hard constraints
+
+- Read-only — do not modify any files.
+- No dev server, no test runner, no browser. Static trace only.
+- No summary phrases ("everything looks correct"). Cite line numbers or you didn't trace.
+- No boilerplate caveats. Be specific to this smoke.
+```
+
+### PM judgment — what to do with the report
+
+For each verifier report:
+
+1. **Spot-check 1-2 cited file:line pairs** on the first few dispatches per session. Open the file, confirm the line says what the verifier claims. Once calibrated, accept on quality signals (citations specific, caveats per-test, verdict honest).
+
+2. **Decide accept / re-dispatch / escalate:**
+   - `trace-pass` with clean spot-check → annotate the smoke `Trace verified: <date> (Verifier <N>)`. Smoke `Status` stays `Pending` — trace is never a status flip; only eyeball pass flips status.
+   - `trace-incomplete` → fall back to PM-inline trace or eyeball, depending on what the verifier couldn't follow. Don't re-dispatch the same prompt and hope.
+   - `trace-fail` due to wiring bug → escalate to a fresh implementation worker. Trace-fail is a real bug surface.
+   - `trace-fail` due to wrong-lane → re-tag the smoke `Lane: visual` and hand to user for eyeball. The verifier did its job by refusing.
+   - **Catalog-vs-code contradiction surfaced** → fix the catalog entry (wrong setup, wrong expected) before any other action. The smoke is unrunnable as written.
+
+3. **Calibration discipline:** if a `trace-pass` smoke later fails an eyeball verification, log the event in `tests/smoke/.calibration-log.md` with date, smoke ID, what trace missed, root cause. After 3-4 calibration events, revisit the verifier prompt — it's drifting.
+
+### What this is NOT
+
+- **Not a status flip.** Trace verification annotates a smoke; it never moves `Pending` → `Passed`. The catalog invariant — `Passed` means a human verified the observable — is load-bearing. See [docs/smoke-tests-pending.md](smoke-tests-pending.md) for the lane / annotation conventions.
+- **Not for visual smokes.** Layout, contrast, animation, click feel, copy — eyeball-only. Verifier should reject these with `trace-fail / wrong lane`.
+- **Not a substitute for pgTAP / unit tests.** If the framework prescribes a unit-test pattern that already covers a smoke's domain (e.g., pgTAP for RLS), don't dispatch a verifier — the unit test is the verification.
+
+---
+
 ## Identification protocol
 
 Multiple worker tabs get confusing fast — when the PM says "Worker 2 had an issue with the migration" and your eyes have to scan task-name truncations across five tabs to find the right window, you've added overhead. A small naming convention solves this.

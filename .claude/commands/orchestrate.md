@@ -242,22 +242,66 @@ Once all workers have reported implementation done:
 
 If any worker hit a blocker that needs deeper work, dispatch a follow-up worker with a fresh prompt referencing the original plan doc.
 
-## Step 9: Smoke handoff (Phase 9)
+## Step 9: Smoke verification + handoff (Phase 9)
 
-- Identify integration-level smoke tests workers couldn't run.
-- Add them to `docs/smoke-tests-pending.md` with stable IDs (e.g., `[phase-slug]-smoke-N`).
-- Output to user as **copy-paste-ready instructions** in a fenced block:
+Workers couldn't run integration-level smokes (they see only their slice). PM owns this phase. The protocol now dispatches by Lane — see [docs/smoke-tests-pending.md → Lanes](../../docs/smoke-tests-pending.md#lanes) and [docs/MULTI_AGENT_WORKFLOW.md → Verification workers](../../docs/MULTI_AGENT_WORKFLOW.md#verification-workers).
+
+### 9a: Catalog the smokes
+
+For each integration-level smoke this phase needs:
+
+1. Add an entry to `docs/smoke-tests-pending.md` with a stable ID. Tag the **Lane**: `sql` / `wiring` / `visual` / `integration`.
+2. For `Lane: wiring`, also fill the **Hypothesized starting point** field (file or component) — required input for the trace-verifier.
+3. Save the catalog before dispatching anything.
+
+### 9b: Verify by Lane
+
+Process each smoke according to its Lane:
+
+| Lane | Verification path |
+|---|---|
+| `sql` | If the framework prescribes pgTAP (or equivalent unit-test pattern) and the smoke is covered by an existing/added unit test, the unit test IS the verification. Don't dispatch a separate runner — flip `Status: Passed` when the unit test passes. If no pgTAP coverage exists, treat as `integration` and hand to user. |
+| `wiring` (meets gate) | Dispatch a **trace-verifier subagent** per smoke. Gate: ≥3 files in the data path OR crosses a state-machine / RLS / server-action boundary. Use the verifier prompt template from MULTI_AGENT_WORKFLOW.md. |
+| `wiring` (below gate) | PM-inline trace. Single-file leaf check; 1-2 sentence summary is enough. |
+| `visual` | Eyeball only. No PM trace, no verifier dispatch. Hand to user. |
+| `integration` | Manual run-the-binary verification. Hand to user. |
+
+For trace-verifier dispatches, spawn via Agent tool with `subagent_type: "general-purpose"` and the prompt template. Cap concurrency at 2 verifiers in flight (same as implementation worker concurrency). Save each verifier's report to `docs/plans/[phase-slug]/verifier-N-[smoke-id].md` for the audit trail.
+
+### 9c: Judge each verifier report
+
+For each returned trace report:
+
+1. **Spot-check** 1-2 cited file:line pairs (do this on the first few dispatches per session to calibrate trust).
+2. **Decide:**
+   - `trace-pass` + clean spot-check → annotate the smoke with `Trace verified: <date> (Verifier <N>)`. **Status stays `Pending`** — trace is never a status flip. Only eyeball pass flips status.
+   - `trace-incomplete` → fall back to PM-inline trace if you can carry the verifier's partial work, or hand the smoke to user as eyeball-required.
+   - `trace-fail` (wiring bug) → escalate to a fresh implementation worker. The verifier found a real bug.
+   - `trace-fail` (wrong lane) → re-tag the smoke `Lane: visual` and hand to user.
+   - **Catalog-vs-code contradiction surfaced** → fix the catalog entry first. The smoke is unrunnable as written. Edit the smoke's Setup or Steps, then re-dispatch the verifier (or proceed to handoff if the contradiction was the only issue).
+
+### 9d: Handoff what's left
+
+Output to user as **copy-paste-ready instructions** in a fenced block — only the smokes that need the user's eyeballs or hands. Trace-verified-but-eyeball-pending smokes go in this list with the verifier annotation noted.
 
 ```
 Run these smoke tests:
 
-1. [Stable ID] — [what to do]
-   Expected: [what should happen]
+1. [Stable ID] (Lane: visual | Lane: integration | Lane: wiring + Trace verified <date>)
+   What to do: [steps]
+   Expected: [observable]
 
 2. ...
 ```
 
-**Pause here.** User runs smokes, reports results. If blockers, address them (may dispatch follow-up workers, may fix in PM). Loop until smokes pass.
+### 9e: Loop until clear
+
+**Pause.** User runs smokes, reports results.
+- Pass → flip `Status: Passed (<date>)`.
+- Fail → triage; may dispatch a follow-up implementation worker, may fix in PM.
+- Calibration event (a `Trace verified` smoke later eyeball-fails) → log to `tests/smoke/.calibration-log.md` with date, smoke ID, what trace missed, root cause. After 3-4 such events, revisit the verifier prompt — it's drifting.
+
+Loop until all smokes are either `Passed` or explicitly deferred with user authorization.
 
 ## Step 10: Ship (Phase 10)
 
