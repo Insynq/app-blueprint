@@ -1,0 +1,45 @@
+{
+  "name": "@insynq/app-blueprint",
+  "version": "0.1.1",
+  "description": "Installer for the @insynq/app-blueprint framework: slash-command + KB scaffold for Claude Code projects.",
+  "license": "MIT",
+  "author": "Insynq",
+  "homepage": "https://github.com/Insynq/app-blueprint",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Insynq/app-blueprint.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Insynq/app-blueprint/issues"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "framework",
+    "scaffold",
+    "installer",
+    "agent",
+    "slash-commands"
+  ],
+  "bin": {
+    "app-blueprint": "./bin/init.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "tar": "^7.5.15"
+  },
+  "scripts": {
+    "prepublishOnly": "node ./bin/init.js --version >/dev/null && test -x ./bin/init.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
