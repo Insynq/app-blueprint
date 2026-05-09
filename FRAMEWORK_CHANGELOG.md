@@ -60,6 +60,38 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.4] - 2026-05-08
+
+Autonomy contract: permissions allowlist in `.claude/settings.json` enables set-and-forget autonomy for local file/code work while preserving prompts for irreversible / shared-state operations. Backported from `@insynq/agent-blueprint` v0.1.0 with the ask-list adjusted for Supabase + Vercel ops. Also fixes an adopter-facing bug discovered during the agent-blueprint fork: project-owned templates were shipping app-blueprint's own framework-development internal state to adopters on first install.
+
+### Added
+
+- `.claude/settings.json`: full autonomy contract block with `allow` / `ask` / `deny` arrays.
+  - Allow: file edits (`Edit`/`Write`/`Read`/`Glob`/`Grep`/`TodoWrite`/`NotebookEdit`/`WebFetch`/`WebSearch`), common reads (`ls`/`cat`/`head`/`tail`/`grep`/`find`/`wc`), filesystem mutations (`mkdir`/`touch`/`mv`/`cp`), `node`/`npm install`/`npm run`/`npx`/`pnpm install`/`pnpm run`, git read ops (`status`/`diff`/`log`/`branch`/`show`/`remote`/`stash`) plus `git add`, read-only Supabase CLI (`supabase status`/`db diff`/`migration list`/`functions list`), read-only Vercel CLI (`vercel ls`/`inspect`).
+  - Ask: `git commit`/`push`/`reset`/`rebase`/`checkout`/`merge`/`tag`, `npm publish`/`pnpm publish`, `rm -rf`, Supabase migrations + Edge Function deploys (`db push`/`db reset`/`migration up`/`migration down`/`functions deploy`), Vercel `deploy`/`--prod`/`env`/`domains`/`rollback`.
+  - Deny: `git push --force` / `-f`, `git reset --hard`, `rm -rf /`, `rm -rf ~`, `rm -rf ~/*`, `sudo`.
+- `README.md`: new "Autonomy contract" section documenting the contract and the `.claude/settings.local.json` override path.
+
+### Changed
+
+- `README.md`: replaced the prior "Customizing Permissions" section with the new "Autonomy contract" section. The old section recommended `allowedTools` (incorrect key) and stated "By default only npm, npx, and git are pre-approved" — both now stale under the new permissions model.
+- `docs/KB_8_Current_State.md`, `docs/CHANGELOG.md`, `docs/LESSONS.md`: reset project-owned templates to clean skeletons. They were shipping app-blueprint's own framework-development internal state (FWD-* smoke IDs, framework-distribution phase notes, Stripe/order-completed/Radix-dialog incident lessons) to adopters on first install.
+
+### Removed
+
+- N/A
+
+### Renamed
+
+- N/A
+
+### Migration Notes
+
+- **Existing adopters:** `.claude/settings.json` is `hybrid`; `/update-framework` will offer a three-way merge. Accepting the canonical version replaces the prior bare allow-list with the full autonomy contract. To preserve a per-developer override (e.g. allowing your specific package manager or DB CLI), use `.claude/settings.local.json` (gitignored) rather than diverging the tracked file.
+- **Project-owned template reset (KB_8 / CHANGELOG / LESSONS):** these are `project-owned` in the manifest, so `/update-framework` will **not** overwrite them on existing adopter installs. The reset only affects **new** installs going forward. Existing adopters who inherited the stale content from v0.1.0–v0.1.4-pre.1 should manually clear any remaining FWD-* / framework-distribution / Stripe references from their copies.
+
+---
+
 ## [0.1.4-pre.1] - 2026-05-08
 
 **Pre-release for dogfooding only.** Introduces the verification-workers pattern for `/orchestrate` Phase 9: PM dispatches a trace-verifier subagent (with a 6-clause contract prompt) for `wiring`-lane smokes that meet a complexity gate (≥3 files OR cross a state-machine / RLS / server-action boundary). Verifier reports become inspectable artifacts that surface catalog-vs-code contradictions PM-inline compression hides. Pilot data: 3-smoke run found 100% verdict accuracy + 100% citation accuracy + 2/3 catch rate on test-design bugs PM missed inline.

@@ -200,16 +200,18 @@ The `.framework-manifest.json` at canonical declares this explicitly. Five categ
 
 If `/update-framework` finds a file in canonical not in the manifest, it surfaces it for your decision rather than installing silently.
 
-## Customizing Permissions
+## Autonomy contract
 
-Claude Code's allowed commands are configured in `.claude/settings.json` (a hybrid file — your customizations are preserved on update). By default only `npm`, `npx`, and `git` are pre-approved. Add your package manager and project-specific tools so Claude can run them without asking every time.
+By default, the framework allows the agent to edit files, write code, run installs/builds, and stage commits without prompting. The agent pauses for approval on:
 
-Common additions depending on your stack:
-```json
-"allowedTools": ["npm", "npx", "git", "pnpm", "bun", "supabase", "gh", "cargo", "python"]
-```
+- git commit, push, reset, rebase, checkout, merge, tag
+- npm/pnpm publish
+- rm -rf
+- Supabase migrations and Edge Function deploys (db push, db reset, migration up/down, functions deploy)
+- Vercel deploys, env mutations, domain changes, rollbacks
+- sudo and any destructive or shared-state operation
 
-Add any CLI tool your workflow requires. Only include tools you're comfortable Claude running autonomously.
+Override locally in `.claude/settings.local.json` (gitignored, per-developer) or modify `.claude/settings.json` directly if the change should ship to every adopter on the next `/update-framework` pull.
 
 ## Stack Agnosticism
 
