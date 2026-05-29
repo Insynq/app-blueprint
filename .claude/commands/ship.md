@@ -1,5 +1,5 @@
 ---
-description: Update project docs, commit changes, and push to remote
+description: Use when a chunk of work is done and verified and you are ready to land it — updates project docs and KBs, writes a changelog entry, commits, and pushes. Reach for this at the end of a phase; run from the PM context, not a worker.
 arguments:
   - name: message
     description: Commit message describing the changes

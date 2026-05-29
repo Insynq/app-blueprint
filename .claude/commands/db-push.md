@@ -1,5 +1,5 @@
 ---
-description: Safely push Supabase migrations with RLS audit and type regeneration. Database only — does NOT deploy edge functions.
+description: Use when you have a Supabase migration ready to apply — validates with a dry-run and RLS audit, pushes it, then regenerates types. Reach for this to ship schema changes safely. Database only; does NOT deploy edge functions.
 arguments:
   - name: file
     description: Migration file path. If omitted, auto-detects the latest unpushed migration.

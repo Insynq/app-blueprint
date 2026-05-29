@@ -1,5 +1,5 @@
 ---
-description: Review a spec doc for gaps, missing decisions, and risks before implementation
+description: Use when you have a spec or plan doc and want to catch gaps, missing decisions, and risks before building. Reach for this after /brainstorm or /plan and before /implement.
 arguments:
   - name: spec
     description: Path to the spec document to review (e.g., "docs/my-feature-spec.md")

@@ -54,9 +54,40 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
-## [Unreleased]
+## [0.1.5] - 2026-05-29
 
-[Changes pending release land here.]
+Adds a project-owned **Parking Lot** doc and wires `/orchestrate` pivot review and `/brainstorm` Phase 1 to read it. Captures observations / open questions / considerations that surface mid-work without committing to scope, then funnels them into pivot review at phase boundaries (adopt / defer / drop) and into brainstorms as an overlap check before recommending an approach. Closes the loop between mid-work observation capture and the scoping rituals — without a parking lot, items either get chased mid-task (violating the "never pivot mid-task" rule) or forgotten.
+
+Also adopts four mechanisms from the obra/superpowers skills ecosystem after a review for fit: (1) all 25 command `description` fields rewritten to **WHEN-to-use** trigger/symptom form rather than workflow summaries — the agent selects a command from its description alone and was observed following workflow-style descriptions instead of reading the body; (2) a new `docs/AUTHORING_COMMANDS.md` capturing command-authoring conventions (previously implicit) plus the description rule; (3) an explicit **verification gate** in `MULTI_AGENT_WORKFLOW.md` Phase 8 ("fresh evidence, not the worker's word") and a seventh trace-verifier contract item ("verify the code, not the report"); (4) a piloted **Iron-Law discipline** treatment on `/debug` (unconditional root-cause rule + rationalization table + 3-strikes escape hatch). The `condition-based-waiting` principle was folded into `TEST_KB_6` rather than added as a new surface.
+
+### Added
+
+- `docs/PARKING_LOT.md`: project-owned skeleton with **Open** / **Adopted into scope** / **Resolved / dropped** sections plus a lifecycle blurb. Manifest entry: `project-owned`, default action `skip` (template ships once on install; framework never overwrites adopter content).
+- `CLAUDE.md`: indexes `PARKING_LOT.md` under "Project state" with a note that `/orchestrate` reads it during pivot review and `/brainstorm` reads it as an overlap check.
+- `.claude/commands/orchestrate.md`: Step 1 (pivot review) now reads `PARKING_LOT.md` Open items, surfaces them in the user-facing pivot question, and moves adopted/dismissed items to the corresponding sections.
+- `.claude/commands/brainstorm.md`: Phase 1a now reads `PARKING_LOT.md` for topic overlap and surfaces overlapping items in the final output (Context / Constraints) rather than rediscovering them.
+- `docs/AUTHORING_COMMANDS.md`: new framework-managed doc — conventions for writing/editing commands (the WHEN-not-WHAT description rule, frontmatter, naming, search optimization, body structure, the Iron-Law discipline pattern). Manifest entry: `framework-managed`, default action `overwrite-with-backup`.
+
+### Changed
+
+- `.framework-manifest.json`: added `docs/PARKING_LOT.md` to `categories.project-owned` and `default_action_on_conflict` (`skip`); added `docs/AUTHORING_COMMANDS.md` to `categories.framework-managed`.
+- `.claude/commands/*.md` (all 25): rewrote the `description` field to WHEN-to-use trigger/symptom form (leads with the situation that should invoke the command; adds negative routing between easily-confused commands; keyword coverage for search). No body or argument changes.
+- `docs/MULTI_AGENT_WORKFLOW.md`: added a **verification gate** callout to Phase 8 (a worker's "done" is a claim, not evidence — PM must run the check this exchange and read the output before calling a slice verified) with a claim/verifies/not-sufficient table; added trace-verifier contract item 7 ("verify the code, not the report" — treat any implementer notes as unverified claims) and bumped the contract header from six to seven.
+- `.claude/commands/debug.md`: piloted the Iron-Law discipline pattern — upgraded the soft "core rule" into an unconditional **NO FIX WITHOUT A CONFIRMED ROOT CAUSE** rule with a rationalization-rebuttal table, the letter-vs-spirit line, and a 3-strikes escape hatch (after three failed fixes, stop and question the problem model); wired the escape hatch into the post-return handling. Scoped to `/debug` only pending calibration before any wider rollout.
+- `docs/Test KBs/TEST_KB_6_Async_Realtime_Outbox.md`: named the **condition-based waiting** principle at the head of §14 (wait for the actual condition, never a fixed delay) with a don't/do table, unifying the previously-scattered `expect.poll` / `vi.waitFor` / Playwright auto-wait tactics.
+
+### Removed
+
+- N/A
+
+### Renamed
+
+- N/A
+
+### Migration Notes
+
+- **Existing adopters:** `docs/PARKING_LOT.md` is `project-owned` with `skip`, so `/update-framework` will install the template only if you don't already have one. If you've been keeping parking-lot-style notes elsewhere (Notes app, scratch doc, memory entries), migrate them into `docs/PARKING_LOT.md` Open section so `/orchestrate` and `/brainstorm` start picking them up automatically.
+- **No-op for projects that don't use `/orchestrate` or `/brainstorm`:** the doc is informational; nothing breaks if you ignore it.
 
 ---
 

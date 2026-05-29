@@ -1,5 +1,5 @@
 ---
-description: Comprehensive security audit — code, database access control, and infrastructure in parallel
+description: Use when you need a comprehensive security sweep before a release or milestone — runs code review, database access-control (RLS), and infrastructure audits in parallel. Reach for this for a full-surface audit rather than one focused area.
 arguments:
   - name: baseline
     description: Path to previous audit report to check for regressions (optional)

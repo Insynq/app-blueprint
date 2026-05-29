@@ -153,6 +153,27 @@ Each worker (subagent or separate-window):
 - PM manages commit hygiene — coalesces or splits commits as needed.
 - PM updates `phase-plan.md` with progress.
 
+> **Verification gate — fresh evidence, not the worker's word.**
+> A worker reporting "done" is a *claim*, not verification. Before the PM treats any slice as
+> complete, it must have **fresh evidence in the current exchange**:
+>
+> 1. **Name the check** that proves the slice works (the build/typecheck/test command, the diff that
+>    must exist, the row that must appear).
+> 2. **Run it now** — don't rely on the worker's report that it passed, and don't rely on a check you
+>    ran earlier in the phase. Run it against the integrated result.
+> 3. **Read the actual output**, then decide. A passing exit code the PM didn't read is not evidence.
+>
+> | The claim | What actually verifies it | Not sufficient |
+> |---|---|---|
+> | "Worker finished the slice" | `git diff` shows the expected changes | Worker's summary says "done" |
+> | "It type-checks / builds" | PM ran the build command this turn and read a clean result | Worker reported it compiled |
+> | "Tests pass" | PM ran the suite this turn and read the output | Worker pasted a green result earlier |
+> | "The wiring is correct" | Trace-verifier artifact or eyeball (per lane, Phase 9) | The code "looks right" |
+>
+> If the PM hasn't run the check in this exchange, it cannot call the slice verified — it can only
+> say "the worker reports it's done, verifying now." This mirrors the smoke-catalog rule that a code
+> trace never flips a smoke to `Passed`: a claim is never its own proof.
+
 ### Phase 9: Smoke tests
 
 - PM identifies integration-level smoke tests workers couldn't run (workers see only their slice; integration smokes need the full picture).
@@ -272,7 +293,7 @@ If the smoke is fundamentally about any of those, return verdict = trace-fail wi
 - Hypothesized starting point: <PM's best guess: file or component to start tracing from>
 - Source commit / spec:    <sha or spec doc>
 
-## Your contract — a trace counts ONLY if all six hold
+## Your contract — a trace counts ONLY if all seven hold
 
 1. **End-to-end path with file:line citations.** Name every hop. "DB query at <file>:<line> → fetcher at <file>:<line> → component at <file>:<line> → render condition at <file>:<line> → handler at <file>:<line>." If you can't follow the path end-to-end, verdict = trace-incomplete. Do not approximate.
 
@@ -285,6 +306,8 @@ If the smoke is fundamentally about any of those, return verdict = trace-fail wi
 5. **Honesty bias.** False negatives ("I'm not sure") cost less than false positives. When in doubt, downgrade to trace-incomplete and tell PM exactly what you couldn't verify.
 
 6. **Catalog-vs-code contradiction check.** If the smoke's Setup or Steps presuppose a state the code's preconditions don't allow (read-only flags, filter clauses, gated routes, role gates, etc.), surface the contradiction in caveats with file:line of the contradicting precondition. The catalog can be wrong; flag it when it is.
+
+7. **Verify the code, not the report.** If you were handed an implementer's completion notes, commit message, or PM summary, treat every claim in it as unverified until you've seen the line yourself. Assume it may be optimistic or incomplete — implementers often report "done" on work that compiled but doesn't wire through. Your evidence is the code at a cited file:line, never a description of the code. If a claim and the code disagree, the code wins and you say so.
 
 ## Verdict semantics — choose precisely
 

@@ -1,5 +1,5 @@
 ---
-description: Diagnose and fix a bug using root-cause investigation before any code changes
+description: Use when something is broken, throwing, failing a test, or behaving unexpectedly and you need the root cause before touching code. Reach for this instead of guessing at a fix when you see errors, wrong output, or flaky behavior.
 arguments:
   - name: issue
     description: Description of the bug or unexpected behavior
@@ -29,7 +29,25 @@ Issue: **$ARGUMENTS.issue**
 
 You are a systematic debugger. Your job is to find the root cause of the reported issue and fix it with the minimal, most targeted change possible.
 
-**Core rule: Run one diagnostic before writing any code. A symptom is a clue, not a spec — never implement a hypothesis until a test confirms it.**
+## The Iron Law
+
+**NO FIX WITHOUT A CONFIRMED ROOT CAUSE.** You may not edit code to address the symptom until a diagnostic test has confirmed *why* it happens. A symptom is a clue, not a spec. Implementing a hypothesis before testing it is the single most expensive debugging mistake — it produces fixes that mask the bug, leave the real cause live, and create a second outage later.
+
+This is not a guideline you weigh against time pressure. **Violating the letter of this rule is violating its spirit** — "I'm basically sure" and "the test would just confirm it" are not confirmation. Run the test.
+
+### Rationalizations you will generate — and the rebuttals
+
+| The thought | The reality |
+|---|---|
+| "It's obvious what's wrong, I'll just fix it." | Obvious-looking causes are wrong often enough that the diagnostic is cheap insurance. Run it. |
+| "Writing a diagnostic test wastes time." | A wrong fix wastes far more — you ship it, it doesn't work, you debug the debugging. The test is the fast path. |
+| "I'll fix it and the fix doubles as the test." | A fix that 'works' can pass for the wrong reason (masked symptom, cache, race). You won't know what you actually fixed. |
+| "There are several possible causes, I'll fix all of them." | Shotgun fixes hide which change mattered and add untested code paths. One hypothesis, one test, one fix. |
+| "The user is in a hurry." | Then a correct fix matters more, not less. Skipping root cause is how a 10-minute bug becomes a 3-day one. |
+
+### Escape hatch — when you're stuck
+
+If **three** fix attempts have failed, STOP. Do not try a fourth variation. Three failed fixes is not a failed hypothesis — it's a signal the model of the problem is wrong (wrong layer, wrong abstraction, wrong assumption about how the system works). Report to the user: what you tried, what each attempt assumed, and the assumption you now think is false. Re-characterize from Step 1 with that assumption discarded.
 
 ## Step 0: Read Project Context
 
@@ -245,5 +263,6 @@ If the root cause reveals a pattern worth adding to `docs/LESSONS.md`, note it e
 
 - **Hypothesis confirmed + fix implemented** → run `/gen-test` to add a regression test, then `/ship`
 - **Hypothesis was wrong** → re-read the investigation, re-characterize the symptom, re-spawn debug agent with the corrected hypothesis
+- **Third hypothesis in a row was wrong** → stop re-spawning. Per the Iron Law's escape hatch, three misses means the model of the problem is wrong, not the hypothesis. Surface the failing assumption to the user and re-scope (often this means `/investigate` on the broader subsystem, or questioning an architectural assumption) before another fix attempt
 - **LESSONS.md addition suggested** → add the entry before shipping so future sessions inherit the lesson
 - **Fix is large/multi-file** → stop here, write a spec doc, run `/plan-review` + `/implement` instead

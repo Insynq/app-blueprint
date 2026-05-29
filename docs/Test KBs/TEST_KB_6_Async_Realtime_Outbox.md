@@ -828,6 +828,14 @@ it('batch flush fires after 500ms debounce', async () => {
 
 ## 14. Determinism Techniques
 
+**The principle: condition-based waiting.** Every technique below is one rule applied to a different API — *wait for the actual condition you care about, never for a guess about how long it takes.* A fixed delay is a bet against the slowest machine that will ever run the test: too short and it flakes, too long and the suite crawls. Replace "wait 500ms then assert" with "poll the assertion until it's true (or a generous timeout fires)." If you find yourself reaching for `setTimeout(resolve, N)` / `page.waitForTimeout(N)` to wait for *app state*, that's the smell — express the state as a predicate and poll it instead. (Fixed delays are only legitimate for things with no observable signal — e.g. the 150ms settle after `SUBSCRIBED` in the Realtime harnesses above, where the channel offers no "ready" event to await.)
+
+| Waiting for | Don't | Do |
+|---|---|---|
+| A DB row / count | `await sleep(500)` then query | `await expect.poll(() => query(), {timeout})` |
+| An array to fill from events | `await sleep(N)` then assert length | `await vi.waitFor(() => { if (!received.length) throw; })` |
+| UI state in Playwright | `await page.waitForTimeout(N)` | `await page.waitForSelector(...)` / web-first `expect` auto-waits |
+
 **`expect.poll`** — always use for asynchronous state assertions. Available since Vitest 2. Since Vitest 4, forgetting `await` is a hard failure.
 
 ```typescript

@@ -1,5 +1,5 @@
 ---
-description: Generate tests following the project's testing patterns and conventions
+description: Use when a source file lacks coverage and you need tests that follow the project's existing testing patterns. Reach for this after writing or changing code; covers unit, integration, and component tests.
 arguments:
   - name: file
     description: Source file to test (e.g., "src/hooks/useOrders.ts")

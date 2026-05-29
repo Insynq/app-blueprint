@@ -1,5 +1,5 @@
 ---
-description: Implement a validated plan by spawning parallel implementer agents
+description: Use when you have a validated plan or spec doc and are ready to build it — spawns parallel implementer agents and runs a post-batch audit. Reach for this only after planning or brainstorming, not for exploratory work.
 arguments:
   - name: plan
     description: Description of the plan to implement (references the orchestrator output)

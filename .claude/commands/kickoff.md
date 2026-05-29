@@ -1,5 +1,5 @@
 ---
-description: Guided discovery session — defines your app concept, scope, and architecture before any code is written
+description: Use when starting a brand-new (greenfield) project with no code yet — a guided discovery session that defines app concept, scope, and architecture before anything is built. Run after /preflight on a fresh repo; for an existing codebase use /adopt instead.
 ---
 
 # Kickoff — App Discovery & Foundation Setup

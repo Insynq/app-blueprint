@@ -1,5 +1,5 @@
 ---
-description: Deep web research agent — thorough, multi-source, synthesized reports saved to file
+description: Use when you need thorough, multi-source web research on a topic with a synthesized, cited report saved to file. Reach for this for external or world knowledge (libraries, vendors, regulations, prior art) rather than codebase questions — use /investigate for those.
 arguments:
   - name: topic
     description: The topic, question, or problem to research

@@ -1,5 +1,5 @@
 ---
-description: Run the PM phase loop — pivot review → brainstorm → plan + audit → worker dispatch → reconciliation → implementation → verification → smoke → ship
+description: Use when shipping any non-trivial chunk of work that crosses files or subsystems — drives the PM phase loop (pivot → brainstorm → plan + audit → worker dispatch → reconcile → implement → verify → smoke → ship). The default entry point for feature work; skip it only for trivial one-file edits.
 arguments:
   - name: phase
     description: Phase slug (e.g., "auth-rework"). Optional — if omitted, infer from current state or ask the user.
@@ -46,10 +46,13 @@ State your read clearly to the user: *"I see we're entering Phase N: [phase name
 **Skip if phase-plan.md already exists.**
 
 - Read the prior phase plan (most recent shipped `phase-plan.md` in `docs/plans/`) and `KB_8_Current_State.md`.
+- Read `docs/PARKING_LOT.md` — the **Open** section is the candidate pool for pivots. Items there were captured mid-work without committing to scope; pivot review is where they're surfaced for adoption, deferral, or drop.
 - Identify what the prior plan documented as "next phase" or "follow-up work."
-- Ask the user, in plain English: *"The prior plan suggested [X] next. Any pivots before we scope?"*
+- Ask the user, in plain English: *"The prior plan suggested [X] next. Parking lot has [N] open items: [one-line each]. Any pivots before we scope?"*
 
 If pivots: align with the documented plan. Propose a consolidated scope that captures both. Get user confirmation before proceeding.
+
+When a parking-lot item is pulled into the scope, move it from **Open** to **Adopted into scope** in `PARKING_LOT.md` with a link to the new phase plan. When an item is explicitly dismissed during pivot review, move it to **Resolved / dropped** with a one-line outcome.
 
 **Output:** consolidated scope statement (1–3 sentences). User confirms or redirects.
 
@@ -335,7 +338,7 @@ If no workers are in flight (e.g., between phases), just show wrapped + sidebars
 
 ## Hard rules
 
-1. **Never pivot mid-task.** If the user surfaces a tangential observation, catalog it in the status board's sidebars section. Surface the catalog when the active task wraps.
+1. **Never pivot mid-task.** If the user surfaces a tangential observation, catalog it in the status board's sidebars section. Surface the catalog when the active task wraps. If the surfaced item won't be acted on this phase, persist it to `docs/PARKING_LOT.md` Open section before the session ends — sidebars are PM-context-local and die with the window; the parking lot is the durable destination.
 2. **Never paste worker reports verbatim to the user.** Translate to layman, decision-oriented framing.
 3. **Never spin up a worker for trivial integration fixes** the PM can do in 2 minutes with full context.
 4. **Cap concurrency at ~2 workers** unless you can articulate why a third is genuinely independent.

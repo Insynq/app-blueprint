@@ -38,6 +38,7 @@
 - `KB_9_Screen_Catalog.md`: Inventory of every screen, modal, and dialog — check before building new UI surfaces
 - `CHANGELOG.md`: Running log of what was shipped and when — maintained by `/ship`
 - `LESSONS.md`: Running log of gotchas and hard-won lessons — read before debugging or implementing in unfamiliar areas
+- `PARKING_LOT.md`: Open observations / questions / considerations not yet committed to scope. `/orchestrate` reads it during pivot review; `/brainstorm` reads it as an overlap check before recommending an approach. Append-only by humans during work; agents move items to **Adopted into scope** or **Resolved / dropped** as they're acted on.
 - `smoke-tests-pending.md`: **Single source of truth** for outstanding manual smoke tests with stable IDs. When asked about ship-readiness or "what's left to verify," point here — do not re-list tests in commits, PRs, or chat. Add new tests when shipping behavior automated coverage misses; collapse passed sections to one-liners after each release.
 
 **Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
@@ -64,7 +65,7 @@
 [TODO — populate during /kickoff with working style and communication preferences]
 
 ## Custom Commands
-All commands live in `.claude/commands/`. On a fresh clone, run `/preflight` then `/kickoff` before anything else.
+All commands live in `.claude/commands/`. On a fresh clone, run `/preflight` then `/kickoff` before anything else. To write or edit a command, follow `docs/AUTHORING_COMMANDS.md` (conventions for descriptions, frontmatter, naming, and discipline commands).
 
 ### Orchestrators
 | Command | Purpose |

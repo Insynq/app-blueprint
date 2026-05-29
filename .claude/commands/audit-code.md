@@ -1,5 +1,5 @@
 ---
-description: Review proposed code/plans to check if the solution is the most elegant option
+description: Use when you have a draft plan, a spec, or uncommitted changes and want a second opinion before committing — checks for the most elegant option, reuse of existing code, anti-patterns, and security gaps. Reach for this before implementing or as a post-batch gate.
 arguments:
   - name: file
     description: Specific file to audit (optional - defaults to current plan/changes)

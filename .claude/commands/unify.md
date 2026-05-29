@@ -1,5 +1,5 @@
 ---
-description: Identify similar or duplicate components and design a unified replacement
+description: Use when you notice duplicate or near-duplicate components or logic and want to design a single replacement. Reach for this when the same pattern appears in several places with slight variations.
 arguments:
   - name: description
     description: Description of the duplication problem (e.g., "5 components all showing order status to different roles")

@@ -1,5 +1,5 @@
 ---
-description: Deep codebase investigation — trace data flows, find all usages, identify root causes
+description: Use when you need to understand how something works before changing it — traces data flow, finds all usages, and identifies root causes across the codebase. Reach for this when scoping unfamiliar code or locating where a behavior originates.
 arguments:
   - name: issue
     description: Description of the issue or feature area to investigate

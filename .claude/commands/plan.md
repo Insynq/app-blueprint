@@ -1,5 +1,5 @@
 ---
-description: Create an implementation plan from investigation findings
+description: Use when investigation or brainstorming is done and you need a concrete, step-by-step implementation plan. Reach for this to turn findings into an actionable spec before /implement.
 arguments:
   - name: task
     description: The task or feature to plan implementation for

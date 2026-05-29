@@ -1,5 +1,5 @@
 ---
-description: Audit infrastructure security - headers, dependencies, env vars, storage, deployment config
+description: Use when reviewing deployment or infrastructure security — HTTP headers, dependency vulnerabilities, environment variables and secrets, storage/bucket exposure, CORS, and deploy config. Reach for this when hardening infrastructure rather than application code.
 arguments:
   - name: focus
     description: Focus area - "headers", "deps", "env", "storage", or "all" (default)

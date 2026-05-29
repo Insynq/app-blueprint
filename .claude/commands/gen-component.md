@@ -1,5 +1,5 @@
 ---
-description: Generate a UI component following project patterns and conventions
+description: Use when building a new UI component and want it to match existing project patterns, conventions, and design tokens. Reach for this before hand-writing a component from scratch.
 arguments:
   - name: description
     description: What the component does (e.g., "user avatar with dropdown menu")

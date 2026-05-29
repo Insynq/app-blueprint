@@ -1,5 +1,5 @@
 ---
-description: Audit RLS policies for security gaps, anti-patterns, and missing coverage
+description: Use when reviewing database access control on a SQL database — scans Row Level Security policies for security gaps, missing coverage, and anti-patterns. Reach for this after writing migrations or policies, before pushing schema, or when auditing multi-tenant data isolation.
 arguments:
   - name: table
     description: Audit a specific table only (optional)

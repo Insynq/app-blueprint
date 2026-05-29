@@ -1,5 +1,5 @@
 ---
-description: Pull canonical app-blueprint updates into this project, with per-file review and assisted merge for customizations.
+description: Use when pulling newer canonical app-blueprint releases into this project — shows a per-file review and assisted three-way merge that preserves your customizations. Reach for this to upgrade the framework after the initial install.
 arguments:
   - name: target-version
     description: Specific version tag to update to (e.g., "0.2.0", no leading "v"). Default — latest published release.

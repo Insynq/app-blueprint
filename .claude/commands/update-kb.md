@@ -1,5 +1,5 @@
 ---
-description: Update knowledge base documents to reflect current project state
+description: Use when project state has changed and the knowledge base docs are stale — updates the architecture, current-state, UI-patterns, or screen-catalog KBs without committing. Reach for this to keep KBs current mid-phase, separate from /ship.
 arguments:
   - name: phase
     description: Phase that just completed (e.g., "1.2") — triggers phase-specific updates

@@ -1,5 +1,5 @@
 ---
-description: Generate ASCII diagrams for architecture, data flows, schemas, and UI layouts
+description: Use when a diagram would explain something faster than prose — generates ASCII diagrams for architecture, data flows, schemas, sequences, or UI layouts. Reach for this when documenting or reasoning about structure.
 arguments:
   - name: type
     description: Diagram type - "architecture", "flow", "schema", "ui", "sequence", or "all"

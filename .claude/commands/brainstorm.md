@@ -1,5 +1,5 @@
 ---
-description: Deep-research brainstorm with codebase-grounded options and trade-offs
+description: Use when you are unsure how to approach a feature, problem, or architectural decision and want options before committing — runs deep codebase-grounded research and presents trade-offs. Reach for this before /plan or any implementation, when the path is not obvious.
 arguments:
   - name: topic
     description: The feature, problem, or architectural decision to brainstorm
@@ -44,6 +44,7 @@ You also have direct access to Read, Glob, and Grep tools for quick lookups.
 Read these files to understand the project's architecture, constraints, and current state:
 - `CLAUDE.md` — primary source of truth: tech stack, patterns, current phase, DO NOTs
 - `README.md` — if CLAUDE.md is absent or sparse
+- `docs/PARKING_LOT.md` — **overlap check**: scan the **Open** section for items that touch this topic. Parking-lot items are uncommitted observations that may already frame, constrain, or partially answer the brainstorm. If overlap exists, surface it explicitly in the final output (under Context or Constraints) rather than rediscovering it.
 - Look for documentation in common locations: `docs/`, `.claude/`, `docs/architecture/`
   Use `Glob("docs/**/*.md")` to find relevant docs for this topic
 - Check any archive or completed-phase docs if the topic relates to prior work

@@ -1,5 +1,5 @@
 ---
-description: One-time setup — detect agent + OS, verify commands are project-local, write environment context into CLAUDE.md
+description: Use once on every fresh clone before any other command — detects the AI agent, OS, and shell, verifies commands are project-local (not shadowed by user globals), and writes the Environment block into CLAUDE.md. Run this first, before /kickoff or /adopt.
 ---
 
 # Preflight — Run Once Per Project

@@ -1,5 +1,5 @@
 ---
-description: Generate a database migration following project patterns (SQL databases)
+description: Use when you need a new database migration on a SQL database — generates one following project schema and RLS conventions. Reach for this when adding tables, columns, policies, or constraints.
 arguments:
   - name: description
     description: What the migration does (e.g., "add user preferences table")

@@ -1,5 +1,5 @@
 ---
-description: Generate or update CHANGELOG.md from git history
+description: Use when you need to generate or refresh CHANGELOG.md from git history — preparing a release or backfilling a missing log. Reach for this when summarizing what shipped across a range of commits.
 arguments:
   - name: since
     description: Only include commits since this ref or date (e.g., "v1.0.0", "2026-01-01"). Defaults to all history.

@@ -1,5 +1,5 @@
 ---
-description: Existing-repo onboarding — populate KBs, audit existing docs, merge CLAUDE.md
+description: Use when installing the framework into an existing codebase that already has code — onboards it by populating KBs from observation, auditing any existing docs, and merging CLAUDE.md. Run after the installer and /preflight on a brownfield repo; for an empty repo use /kickoff instead.
 arguments:
   - name: minimal
     description: Skip the populate-KBs and existing-KB-audit steps; only verify framework files installed and do a lightweight CLAUDE.md merge (Reference Documents + Custom Commands tables).
