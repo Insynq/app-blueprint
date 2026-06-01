@@ -6,6 +6,7 @@ Running log of observations, open questions, and considerations that don't yet h
 - New items append to **Open** with date observed (`YYYY-MM-DD`).
 - When an item moves into a phase/spec, link it from here and move it to **Adopted into scope**.
 - When an item is decided against or rendered moot, move to **Resolved / dropped** with a one-line outcome.
+- Items tagged `framework-meta` capture tooling / automation or framework-workflow improvements surfaced during a phase retro (the `/ship` retro sweep routes them here) — process-level signals rather than product scope.
 - Keep the file lean — collapse `Resolved / dropped` entries older than two phases into a one-line summary.
 
 Commands that reference this file: `/orchestrate` (Step 1 — pivot review), `/brainstorm` (Phase 1 — overlap check).

@@ -121,6 +121,19 @@ If `docs/smoke-tests-pending.md` exists:
 
 If the file does not exist, skip this step (project hasn't adopted the catalog yet).
 
+## Step 3.6: Phase Retro Sweep (only if phase argument provided)
+
+A phase boundary is the moment to capture what the work taught. Route each signal to its EXISTING home — do **not** create a new retro doc; a second lessons artifact just forks the record and drifts.
+
+Prompt yourself across these buckets and file each signal where it already lives:
+
+- **Durable process / UX / architecture lessons** (a gotcha worth warning the next contributor about) → tagged entry in `docs/LESSONS.md` (`PROCESS-`, `UI-`, `ARCH-` per the file's existing convention). Every entry needs the real incident as its **Why**.
+- **Architectural decisions made this phase** → `KB_8_Current_State.md` Recent Decisions (or `docs/KB_1_Architecture.md` `## Architecture Decisions` if durable).
+- **Close-calls — things that almost shipped wrong** → a `PROCESS-` entry in `docs/LESSONS.md`; if a code trace or smoke nearly passed something broken, also log it in `tests/smoke/.calibration-log.md`.
+- **Tooling / automation to build next time** (the one signal with no existing home — usually a framework or workflow improvement) → `docs/PARKING_LOT.md` Open, as a dated entry tagged `framework-meta`.
+
+Keep it to signals that actually surfaced — an empty retro sweep is a valid outcome; don't manufacture lessons to fill buckets. "How the phase actually went" already lives in `phase-plan.md` (workflow Phase 10), so don't restate it here.
+
 ## Step 4: Stage Changes
 
 Stage all modified files:

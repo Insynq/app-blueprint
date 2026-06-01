@@ -15,7 +15,11 @@
 [TODO — high-level entities and their relationships. Not a full schema yet, just the concepts and how they connect]
 
 ## Architecture Decisions
-[Empty — add decisions here as they're made during development]
+[Empty — add decisions here as they're made during development. One row per resolved fork, so the reasoning survives and the decision isn't relitigated later.]
+
+| Decision | Choice | Reasoning | Date |
+|----------|--------|-----------|------|
+| _e.g., Session storage location_ | _Server-side (httpOnly cookie)_ | _XSS exposure of client-stored tokens; matches the AUTH_KB session model_ | _2026-01-15_ |
 
 ## Open Questions
 [Empty — add unresolved architecture questions here. Review and resolve before implementing the affected area]

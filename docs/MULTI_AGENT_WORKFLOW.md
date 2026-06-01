@@ -16,6 +16,8 @@ Three roles, one human:
 
 **The PM phase loop (`/orchestrate`)** is the canonical workflow. The methodology below — identification protocol, communication modes, concurrency rules, setup seeds — is what the loop runs on top of.
 
+**Scaling the PM across waves (optional escape hatch).** Normally one PM window holds both the architectural thread and the tactical dispatch loop. On unusually long, multi-wave work a single window can overflow — the cross-wave architectural context and the per-phase loop stop fitting together. When that happens you can split the PM seat: open a second long-lived window scoped to **architecture only** (holds the multi-wave thread, arbitrates cross-cutting forks, authors specs as deliverables to the phase PM) and treat each phase's PM as its worker. This is a documented release valve for context capacity, **not** a prescribed layer — most work never needs it, there is no `/architect` command, and you collapse back to a single PM the moment one window suffices again.
+
 ---
 
 ## Dispatch modes
@@ -102,6 +104,14 @@ If a single window suffices, use one window. The relay overhead is real — only
 - PM updates `phase-plan.md` with audit findings.
 
 ### Phase 4: Initial worker dispatch (audit round)
+
+**Lockdown gate — before drafting any worker prompt, the PM confirms:**
+
+- [ ] **No unresolved architectural fork** is still open in what's about to be dispatched — every (a)/(b)/(c) raised in brainstorm or planning has a recorded resolution. The PM decides forks; it never hands an open fork to a worker.
+- [ ] **Scope is confirmed** with the user (Phase 1 pivots + brainstorm answers are settled).
+- [ ] *If the slice has a UI surface* — a visual artifact (mockup, wireframe, or the existing screen) exists and the user has seen the intended shape. Skip this line for backend / data / migration slices; it is not a hard precondition for non-UI work.
+
+If any box is unchecked, resolve it before dispatch — a fork resolved now is far cheaper than one discovered mid-implementation across two workers. Durable resolutions land in `docs/KB_1_Architecture.md` `## Architecture Decisions` (or the spec's optional `### Decisions` table); tactical ones stay in the worker plan doc.
 
 For each worker slice:
 

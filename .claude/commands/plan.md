@@ -84,6 +84,11 @@ Each step should be:
 ### Summary
 [1–2 sentences describing what this plan accomplishes]
 
+### Decisions (include ONLY when this plan resolves an architectural fork — omit otherwise)
+| Fork | Resolution | Date |
+|------|------------|------|
+| e.g., REST endpoint vs. server action for submit | Server action — colocated validation, no new endpoint surface | 2026-01-15 |
+
 ### Prerequisites
 - [ ] Investigation complete (root cause/approach identified)
 - [ ] Approach approved

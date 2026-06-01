@@ -139,7 +139,7 @@ Present as a numbered list. Ask the user which to address first or whether to go
 ## Step 5: Update the Spec
 
 After the user makes decisions on each review item, update the spec doc with:
-- Decisions recorded in the relevant section
+- **Decisions recorded in the right home** — durable architectural decisions (the kind a future contributor would relitigate) go to `docs/KB_1_Architecture.md` `## Architecture Decisions`; spec-local tactical decisions stay inline in the affected step's `**Why:**` field. Don't split one decision across both.
 - New steps added to the implementation order
 - Risks documented in a risk register
 

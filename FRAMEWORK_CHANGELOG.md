@@ -54,6 +54,24 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.6] - 2026-06-01
+
+Refines the phase-loop and planning rituals after a real multi-wave project arc surfaced friction. Every change is a **fold-in to an existing artifact — no new commands** — a deliberate rejection of an over-broad "add 6 new skills" proposal (`/architect`, `/lockdown`, `/retro`, `/mockup-explore`, a mandated decisions section, pre-seeded LESSONS entries) in favor of small, reversible edits that don't duplicate mechanisms the framework already has. An adoption analysis applied the project's calibrate-first / refuse-duplication rules: 4 fold-ins, 1 deferred pilot (HTML mockup harness — earns a future project trial, not a skill), 2 rejects (`/architect` duplicates the PM role; seeding the project-owned `LESSONS.md` violates its incident-grounded contract).
+
+### Added
+
+- `docs/MULTI_AGENT_WORKFLOW.md`: **Phase 4 lockdown gate** — a 3-item checklist the PM confirms before drafting worker prompts (no unresolved architectural fork open; scope confirmed; UI slices have a visual artifact the user has seen — conditional, not a precondition for backend work). Resolves forks at dispatch time instead of mid-implementation across two workers.
+- `docs/MULTI_AGENT_WORKFLOW.md`: **"Scaling the PM across waves"** escape-hatch note — an optional second architecture-only PM window for multi-wave work that overflows one context. A documented release valve, explicitly *not* a prescribed layer and *not* a `/architect` command.
+- `.claude/commands/ship.md`: **Step 3.6 Phase Retro Sweep** (fires only when a phase argument is given) — routes retro signals to existing homes: durable lessons → `LESSONS.md`, decisions → `KB_8`/`KB_1`, close-calls → `LESSONS.md` + `tests/smoke/.calibration-log.md`, tooling-to-build → `PARKING_LOT.md` tagged `framework-meta`. No new retro doc.
+- `.claude/commands/plan.md`: optional `### Decisions` table (Fork | Resolution | Date) in the plan output format — included only when a plan resolves an architectural fork.
+- `docs/KB_1_Architecture.md`: self-documenting `## Architecture Decisions` table (Decision | Choice | Reasoning | Date) with an example row, replacing the bare `[Empty]` placeholder.
+
+### Changed
+
+- `.claude/commands/plan-review.md`: Step 5 now names the decision destination explicitly — durable architectural decisions → `KB_1_Architecture.md` `## Architecture Decisions`; spec-local tactical decisions → the affected step's inline `**Why:**` — replacing the ambiguous "the relevant section."
+- `docs/PARKING_LOT.md`: lifecycle note documenting the `framework-meta` tag for tooling / framework-workflow improvements surfaced during phase retros.
+- `package.json`: version bumped to `0.1.6`.
+
 ## [0.1.5] - 2026-05-29
 
 Adds a project-owned **Parking Lot** doc and wires `/orchestrate` pivot review and `/brainstorm` Phase 1 to read it. Captures observations / open questions / considerations that surface mid-work without committing to scope, then funnels them into pivot review at phase boundaries (adopt / defer / drop) and into brainstorms as an overlap check before recommending an approach. Closes the loop between mid-work observation capture and the scoping rituals — without a parking lot, items either get chased mid-task (violating the "never pivot mid-task" rule) or forgotten.
