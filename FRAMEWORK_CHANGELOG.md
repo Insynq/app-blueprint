@@ -54,6 +54,14 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.7] - 2026-06-01
+
+Closes a release-publishing gap that silently stranded adopter projects. `/update-framework` resolves versions **only** from the GitHub Releases API, but the canonical `/ship` only committed and pushed — it never tagged or published a release. The result: three framework versions (0.1.4 stable, 0.1.5, 0.1.6) were committed and changelogged yet invisible to every adopter until a manual release was cut by hand. This adds an automatic release step to `/ship`, guarded so it runs only in the canonical framework repo and is an inert no-op in every app built on the framework.
+
+### Added
+
+- `.claude/commands/ship.md`: **Step 6.5 — Publish Framework Release** (canonical repo only). A `FRAMEWORK_CHANGELOG.md` + `bin/init.js` presence guard makes the step skip entirely in adopter projects (neither file is ever distributed into an app). When canonical and the shipped `package.json` version has no matching release, it extracts that version's notes from `FRAMEWORK_CHANGELOG.md`, tags the shipped commit, and runs `gh release create` — `--prerelease` (no `--latest`) for versions containing `-`, `--latest` otherwise. Idempotent (skips if the release already exists) and non-fatal (a release failure is reported with a manual fallback command and never rolls back the completed commit/push).
+
 ## [0.1.6] - 2026-06-01
 
 Refines the phase-loop and planning rituals after a real multi-wave project arc surfaced friction. Every change is a **fold-in to an existing artifact — no new commands** — a deliberate rejection of an over-broad "add 6 new skills" proposal (`/architect`, `/lockdown`, `/retro`, `/mockup-explore`, a mandated decisions section, pre-seeded LESSONS entries) in favor of small, reversible edits that don't duplicate mechanisms the framework already has. An adoption analysis applied the project's calibrate-first / refuse-duplication rules: 4 fold-ins, 1 deferred pilot (HTML mockup harness — earns a future project trial, not a skill), 2 rejects (`/architect` duplicates the PM role; seeding the project-owned `LESSONS.md` violates its incident-grounded contract).

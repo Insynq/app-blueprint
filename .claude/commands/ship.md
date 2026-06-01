@@ -170,6 +170,58 @@ git pull --rebase && git push
 
 If push fails for any other reason, report the error and STOP — do not force push.
 
+## Step 6.5: Publish Framework Release (canonical repo ONLY — auto-skips in adopter projects)
+
+This closes a real gap: `/update-framework` resolves versions from the GitHub **Releases** API, so a framework version that is committed but never released is invisible to every adopter project. If this is the canonical framework repo and this ship bumped the version, cut the release now so adopters can actually pull it.
+
+**Guard — run this detection FIRST. If it does not print `CANONICAL`, SKIP this entire step** (you are in an adopter project building a real app; there is no framework release to cut):
+
+```bash
+if [ -f FRAMEWORK_CHANGELOG.md ] && [ -f bin/init.js ]; then echo "CANONICAL"; else echo "ADOPTER — skip Step 6.5"; fi
+```
+
+If `CANONICAL`, proceed:
+
+1. Read the version that was just shipped:
+```bash
+VERSION=$(node -p "require('./package.json').version")
+echo "Shipped version: $VERSION"
+```
+
+2. Idempotency check — a re-run of `/ship` must never error here:
+```bash
+gh release view "v$VERSION" >/dev/null 2>&1 && echo "EXISTS" || echo "MISSING"
+```
+If `EXISTS`, SKIP the rest of this step and note "release v$VERSION already published" in the final output.
+
+3. If `MISSING`, extract this version's notes from `FRAMEWORK_CHANGELOG.md` (everything under the `## [$VERSION]` header up to the next `## [`):
+```bash
+awk -v v="$VERSION" '$0 ~ "^## \\["v"\\]" {g=1; next} g && /^## \[/ {exit} g {print}' \
+  FRAMEWORK_CHANGELOG.md > "/tmp/release-notes-$VERSION.md"
+test -s "/tmp/release-notes-$VERSION.md" || echo "WARN: no changelog section for v$VERSION — release will use a placeholder note"
+```
+
+4. Tag the shipped commit and create the release. **Stable vs. pre-release matters**: a version containing `-` (e.g. `0.2.0-beta.1`) is a pre-release — mark it `--prerelease` and do NOT pass `--latest` (the `/update-framework` default path deliberately excludes pre-releases). Otherwise mark it `--latest`:
+```bash
+git tag -a "v$VERSION" -m "v$VERSION" && git push origin "v$VERSION"
+NOTES_FLAG=$(test -s "/tmp/release-notes-$VERSION.md" && echo "--notes-file /tmp/release-notes-$VERSION.md" || echo "--notes v$VERSION")
+if printf '%s' "$VERSION" | grep -q '-'; then
+  gh release create "v$VERSION" --title "v$VERSION" --prerelease $NOTES_FLAG
+else
+  gh release create "v$VERSION" --title "v$VERSION" --latest $NOTES_FLAG
+fi
+```
+
+5. Verify the adopter-facing endpoint now resolves to this version (stable releases only):
+```bash
+curl -sS -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/Insynq/app-blueprint/releases/latest | grep -E '"tag_name"|"prerelease"'
+```
+
+**Failure handling — never fail the ship for a release problem.** The commit and push already succeeded; the work is safe. If `gh` is missing or unauthenticated, or any command above fails, do NOT stop or roll back — report `release step skipped: <reason> — run 'gh release create v$VERSION --latest' manually` in the final output and continue to Step 7.
+
+**Branch note:** the release is cut at the commit you just shipped. For framework ships, that commit should be on (or merged into) `main` so the default branch never drifts behind the published release — if you shipped from a feature branch, flag in the final output that `main` may need the merge.
+
 ## Step 7: Final Output
 
 ```markdown
