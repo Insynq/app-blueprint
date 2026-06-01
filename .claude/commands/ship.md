@@ -204,12 +204,15 @@ test -s "/tmp/release-notes-$VERSION.md" || echo "WARN: no changelog section for
 4. Tag the shipped commit and create the release. **Stable vs. pre-release matters**: a version containing `-` (e.g. `0.2.0-beta.1`) is a pre-release — mark it `--prerelease` and do NOT pass `--latest` (the `/update-framework` default path deliberately excludes pre-releases). Otherwise mark it `--latest`:
 ```bash
 git tag -a "v$VERSION" -m "v$VERSION" && git push origin "v$VERSION"
-NOTES_FLAG=$(test -s "/tmp/release-notes-$VERSION.md" && echo "--notes-file /tmp/release-notes-$VERSION.md" || echo "--notes v$VERSION")
-if printf '%s' "$VERSION" | grep -q '-'; then
-  gh release create "v$VERSION" --title "v$VERSION" --prerelease $NOTES_FLAG
-else
-  gh release create "v$VERSION" --title "v$VERSION" --latest $NOTES_FLAG
-fi
+# Guarantee a non-empty notes file so --notes-file is always one valid, quoted arg
+test -s "/tmp/release-notes-$VERSION.md" || printf 'v%s\n' "$VERSION" > "/tmp/release-notes-$VERSION.md"
+# Stable vs. pre-release via shell-native glob — immune to grep/ugrep aliases and arg-splitting.
+# A version containing '-' (e.g. 0.2.0-beta.1) is a pre-release: mark it --prerelease and do NOT
+# pass --latest (the /update-framework default path deliberately excludes pre-releases).
+case "$VERSION" in
+  *-*) gh release create "v$VERSION" --title "v$VERSION" --prerelease --notes-file "/tmp/release-notes-$VERSION.md" ;;
+  *)   gh release create "v$VERSION" --title "v$VERSION" --latest     --notes-file "/tmp/release-notes-$VERSION.md" ;;
+esac
 ```
 
 5. Verify the adopter-facing endpoint now resolves to this version (stable releases only):

@@ -54,6 +54,14 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.8] - 2026-06-01
+
+Hardens the v0.1.7 auto-release step after its first live run exposed two environment-fragility bugs. The v0.1.7 release still published, but only because the ship subagent hand-recovered per the step's non-fatal contract — the script as written would fail unattended on common setups.
+
+### Fixed
+
+- `.claude/commands/ship.md` Step 6.5: replaced the `printf '%s' "$VERSION" | grep -q '-'` pre-release test with a shell-native `case "$VERSION" in *-*)` glob — the old form broke where `grep` is aliased to `ugrep` (the bare `-` is mis-parsed as a flag). Replaced the unquoted `$NOTES_FLAG` string (which arg-split into a single invalid `gh` token) with an always-non-empty notes file passed as one quoted `--notes-file` argument. The step now runs end-to-end with no manual recovery, on both `grep` and `ugrep` environments.
+
 ## [0.1.7] - 2026-06-01
 
 Closes a release-publishing gap that silently stranded adopter projects. `/update-framework` resolves versions **only** from the GitHub Releases API, but the canonical `/ship` only committed and pushed — it never tagged or published a release. The result: three framework versions (0.1.4 stable, 0.1.5, 0.1.6) were committed and changelogged yet invisible to every adopter until a manual release was cut by hand. This adds an automatic release step to `/ship`, guarded so it runs only in the canonical framework repo and is an inert no-op in every app built on the framework.
