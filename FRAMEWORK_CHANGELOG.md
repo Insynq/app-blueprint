@@ -54,6 +54,22 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.9] - 2026-06-01
+
+Folds three `/ship` improvements upstream from a downstream adopter, adapted to the canonical step structure (the adopter's project-local Step 3 doc-layout customization was NOT pulled up).
+
+### Fixed
+
+- `.claude/commands/ship.md`: **`$ARGUMENTS` template mangling (bug).** The skill referenced named/structured args (`$ARGUMENTS.message`, `$ARGUMENTS.phase`) and Handlebars (`{{#if phase}}`), but the Skill harness substitutes only a single flat `$ARGUMENTS` string — so `.message` / `.phase` / `{{…}}` survived as literal text and could leak into commits and output (observed live: a `/ship` invocation whose commit subject ended in a stray `.message`). Every site now uses flat `$ARGUMENTS`, and **Step 5 now instructs the agent to COMPOSE** a clean commit message (≤72-char imperative subject + a distilled body) from the free-text summary rather than paste it verbatim. Instruction #3 and the final-output template updated to match; an explicit "never emit template tokens" rule added.
+
+### Added
+
+- `.claude/commands/ship.md`: **Step 6.5 — gated merge-to-main + branch cleanup.** Runs only when the ship request explicitly says to land/merge ("ship and merge", "land it", "merge to main"); the default (push branch + remind to open a PR) is unchanged. Fast-forwards `main`, merges `--no-ff`, verifies, pushes, then deletes the merged branch locally + remote using safe deletes only (`git branch -d`, never `-D`; tolerates an already-auto-deleted remote branch). Safety rails: stop on any conflict, never force-push, never force-delete. Includes a stacked-branch caution, an "already on main → skip" guard, and a companion note to enable GitHub's "Automatically delete head branches" for the PR-merge path. Ordered **before** the release step so the release tags `main`; the prior release step renumbers 6.5 → 6.6.
+
+### Changed
+
+- `.claude/commands/ship.md`: **model-trailer hygiene.** The hardcoded `Co-Authored-By: Claude Sonnet 4.6` is replaced with a clearly-marked `<MODEL>` placeholder plus an instruction to fill in the model actually executing the ship — preventing the version drift that forced hand-correction downstream (rather than re-hardcoding a version that drifts again).
+
 ## [0.1.8] - 2026-06-01
 
 Hardens the v0.1.7 auto-release step after its first live run exposed two environment-fragility bugs. The v0.1.7 release still published, but only because the ship subagent hand-recovered per the step's non-fatal contract — the script as written would fail unattended on common setups.
