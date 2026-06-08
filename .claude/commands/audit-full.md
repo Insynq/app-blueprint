@@ -90,13 +90,11 @@ Merge findings from all 3 audits:
 
 ### 2. Cross-Reference Baseline (if provided)
 
-{{#if baseline}}
-Read `$ARGUMENTS.baseline` and for EACH previous finding:
+If `$ARGUMENTS` provides a baseline (a path to a prior audit-findings doc), read it and for EACH previous finding:
 - **Fixed** — issue no longer exists
 - **Regression** — previously fixed issue has reappeared
 - **Outstanding** — was never addressed
 - **New** — not in the baseline
-{{/if}}
 
 ### 3. Deduplicate
 

@@ -28,6 +28,14 @@ arguments:
 
 ---
 
+## Arguments
+
+The command runner substitutes only a single flat string, `$ARGUMENTS` — everything the user typed after `/update-framework`. There are no named variables; the `arguments:` frontmatter block above is documentation only. Parse `$ARGUMENTS` yourself.
+
+Parse `$ARGUMENTS` (space-separated, all optional): the **first token** is the target version — strip any leading `v` (so `v0.2.0` and `0.2.0` both work). The tokens `allow-downgrade`, `dry-run`, and `yes` may appear (in any order) as flags; treat a flag as set when its value is truthy (`true`, `1`, or `yes`). Flags may be written bare (`dry-run`), with a value (`dry-run=true`), or in `--flag`/`--flag=value` form. If `$ARGUMENTS` is empty, default to: latest published release, no downgrade, not a dry run, interactive (TTY) mode.
+
+---
+
 ## Step 0 — Welcome
 
 Before anything else, deliver this welcome to the user. Reproduce it largely verbatim:
@@ -212,9 +220,9 @@ Don't block.
 
 ### 2a. Resolve the target version
 
-If the user supplied `$ARGUMENTS.target-version`, use that string verbatim. Strip any leading `v` (so `v0.2.0` and `0.2.0` both work).
+If a target version was supplied (the first `$ARGUMENTS` token), use it verbatim, stripping any leading `v` (so `v0.2.0` and `0.2.0` both work).
 
-If `$ARGUMENTS.target-version` was not supplied:
+If no target version was supplied:
 
 1. Fetch `https://api.github.com/repos/<owner>/<repo>/releases/latest` via Bash + `curl`. Capture HTTP status and body.
 
@@ -289,7 +297,7 @@ Compute semver comparison between `install-version` and `target-version`.
   ```
   Stop. (This is the most likely first-invocation case in early dogfood. Detect it BEFORE fetching the install-version tarball — saves a network round-trip.)
 
-- **Target < install** (downgrade): if `$ARGUMENTS.allow-downgrade` is not set:
+- **Target < install** (downgrade): if the `allow-downgrade` flag is not set:
   ```
   Refusing to downgrade from v<install-version> to v<target-version>.
   Downgrade UX is a separate concern (un-applying customizations cleanly
@@ -634,7 +642,7 @@ Continue to per-file decisions? [y/N]
 
 ### 6b. Dry-run exit point
 
-If `$ARGUMENTS.dry-run` is set (truthy: `true`, `1`, `yes`):
+If the `dry-run` flag is set (truthy: `true`, `1`, `yes`):
 
 ```
 --dry-run set; exiting without writing.
@@ -647,7 +655,7 @@ Otherwise, wait for user approval. If user declines, exit cleanly: "Cancelled. N
 
 ### 6c. Non-TTY / `--yes` mode
 
-If `$ARGUMENTS.yes` is set (truthy):
+If the `yes` flag is set (truthy):
 
 - Skip the per-file walkthrough.
 - For each 🟥 file, apply the per-file `default_action_on_conflict` from Step 5d. Default for `framework-managed` is `overwrite-with-backup`; for `hybrid` is `sibling`.
@@ -655,7 +663,7 @@ If `$ARGUMENTS.yes` is set (truthy):
 - For 🔵, default to `[k]eep` (don't auto-remove without explicit consent — exception: expired shims still auto-remove since they were already announced).
 - For 🔁 renames, apply the rename.
 
-If non-TTY AND `$ARGUMENTS.yes` is NOT set:
+If non-TTY AND the `yes` flag is NOT set:
 
 ```
 Non-interactive run without --yes. Cannot prompt for per-file decisions.

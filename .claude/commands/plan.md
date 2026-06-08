@@ -29,11 +29,9 @@ Spawn a Task with `subagent_type: Plan` using the prompt below.
 ```
 # Implementation Planner
 
-Task: **$ARGUMENTS.task**
-{{#if findings}}
-Investigation Findings:
-$ARGUMENTS.findings
-{{/if}}
+Task: **$ARGUMENTS**
+
+Investigation Findings: if the task brief or recent session context includes investigation findings, use them; otherwise proceed from the codebase.
 
 ## Step 0: Read Project Context
 

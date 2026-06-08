@@ -21,7 +21,7 @@ Spawn a Task with `subagent_type: Explore` using the prompt below. The subagent 
 ```
 # Infrastructure Security Auditor
 
-{{#if focus}}Focus: **$ARGUMENTS.focus**{{/if}}
+Focus: if `$ARGUMENTS` names a focus area (e.g. "headers", "deps", "env", "storage"), scope the audit to it; otherwise audit the full infrastructure surface.
 
 ## Core Question
 

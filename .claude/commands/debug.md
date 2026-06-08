@@ -23,7 +23,7 @@ Spawn a Task with `subagent_type: general-purpose` using the prompt below.
 ```
 # Debug Agent
 
-Issue: **$ARGUMENTS.issue**
+Issue: **$ARGUMENTS**
 
 ## Your Role
 

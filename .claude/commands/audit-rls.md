@@ -24,8 +24,7 @@ Spawn a Task with `subagent_type: Explore` using the prompt below. The subagent 
 ```
 # RLS Policy Auditor
 
-{{#if table}}Audit table: `$ARGUMENTS.table`{{/if}}
-{{#if focus}}Focus: **$ARGUMENTS.focus**{{/if}}
+Scope: if `$ARGUMENTS` names a specific table, audit only that table's policies; otherwise audit all tables. If `$ARGUMENTS` also names a focus area (e.g. "gaps", "antipatterns", "audit-tables"), emphasize that focus; otherwise cover all of them.
 
 ## Core Question
 

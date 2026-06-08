@@ -54,6 +54,22 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.1.10] - 2026-06-01
+
+Fixes a systemic argument-substitution bug across the command library and documents the convention that prevents it. The runner substitutes only a single flat `$ARGUMENTS` string, but ~15 commands used dotted access (`$ARGUMENTS.topic`) and Handlebars (`{{#if focus}}`, `{{#unless file}}`, `{{depth | default}}`) the runner does not process — so those tokens leaked as literal text into prompts and commits. Most were cosmetic (the agent usually recovered intent), but `changelog.md` was a real functional break: the literal `{{#if since}}$ARGUMENTS.since..HEAD{{/if}}` reached `git log` as a bogus revision arg and errored. Found by a downstream adopter (flagged 6; a full scan surfaced 15).
+
+### Fixed
+
+- **15 command files** had argument-referencing rewritten to the flat-`$ARGUMENTS` convention, behavior preserved:
+  - `changelog.md` — **functional break fixed**: the `since` filter now resolves a concrete `<since>..HEAD` ref (or full history) instead of passing literal Handlebars into `git log`.
+  - Single-arg display leaks (`$ARGUMENTS.x` → `$ARGUMENTS`): `brainstorm`, `unify`, `debug`, `plan-review`, `gen-test`, `visualize`, `plan`.
+  - Optional-arg `{{#if}}` blocks reworded to prose conditionals: `audit-infra`, `audit-rls`, `research` (incl. `{{… | default}}` filters), `audit-full`, `db-push` (`{{#if}}`/`{{#unless}}` file & skip-audit branching).
+  - Multi-arg parsing: `update-framework` (target-version + allow-downgrade/dry-run/yes flags, now parsed from the flat string and robust to flag order), `adopt` (`minimal` flag ×6).
+
+### Added
+
+- `docs/AUTHORING_COMMANDS.md` §2 — **"Referencing arguments in the body"**: documents that the runner substitutes only flat `$ARGUMENTS` (no dotted access, no Handlebars), with prose patterns for single / optional / multiple arguments and a "grep for `$ARGUMENTS\.` and `{{` before shipping" check. This missing convention is what let the bug spread to ~15 commands.
+
 ## [0.1.9] - 2026-06-01
 
 Folds three `/ship` improvements upstream from a downstream adopter, adapted to the canonical step structure (the adopter's project-local Step 3 doc-layout customization was NOT pulled up).

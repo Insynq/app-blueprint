@@ -26,8 +26,7 @@ Spawn a Task with `subagent_type: general-purpose` using the prompt below.
 ```
 # Database Push Orchestrator
 
-{{#if file}}Migration File: **$ARGUMENTS.file**{{/if}}
-{{#if skip-audit}}Skip RLS Audit: **yes**{{/if}}
+`$ARGUMENTS` may contain a migration file path and/or the token `skip-audit`. If `$ARGUMENTS` names a migration file, that is the migration to deploy. If `$ARGUMENTS` includes `skip-audit`, the RLS audit is skipped.
 
 ## Your Role
 
@@ -60,17 +59,12 @@ Report what you found before proceeding.
 
 ## Step 1: Identify Migration
 
-{{#if file}}
-Use the provided file: `$ARGUMENTS.file`
-
-Verify it exists:
+**If `$ARGUMENTS` names a migration file,** use that file as the migration to deploy. Verify it exists (substitute the resolved file path for `<migration-file>`):
 ```bash
-ls -la $ARGUMENTS.file
+ls -la <migration-file>
 ```
-{{/if}}
 
-{{#unless file}}
-Find the latest migration file:
+**Otherwise (no migration file in `$ARGUMENTS`),** find the latest migration file:
 ```bash
 ls -t supabase/migrations/*.sql | head -5
 ```
@@ -81,7 +75,6 @@ npx supabase migration list 2>&1 | tail -20
 ```
 
 Identify the migration(s) that haven't been applied yet. If multiple are pending, report all of them and use the oldest pending one first.
-{{/unless}}
 
 ## Step 1.5: Pre-Existing Column Check
 
@@ -166,11 +159,10 @@ If neither DATABASE_URL nor a validate script is available, skip the dry-run and
 
 ## Step 3: Audit RLS Policies
 
-{{#if skip-audit}}
-RLS audit skipped (--skip-audit flag). Proceed to Step 4.
-{{/if}}
+**If `$ARGUMENTS` includes `skip-audit`,** the RLS audit is skipped (skip-audit flag) — proceed directly to Step 4.
 
-{{#unless skip-audit}}
+**Otherwise (no `skip-audit` in `$ARGUMENTS`), run the RLS audit:**
+
 Read the migration file to identify which tables are affected:
 - Tables created (`CREATE TABLE`)
 - Tables altered (`ALTER TABLE`)
@@ -222,7 +214,6 @@ Before auditing, read the codebase to understand how this project implements aut
 **If RLS audit PASSES (or only warnings):**
 - Report the audit summary
 - Proceed to Step 4
-{{/unless}}
 
 ## Step 4: Push Migration
 

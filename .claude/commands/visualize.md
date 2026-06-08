@@ -176,7 +176,7 @@ Format hint: boxes are services/machines; lines are network connections with pro
 
 ## Instructions
 
-1. Read the relevant source files for `$ARGUMENTS.focus` before drawing
+1. Read the relevant source files for `$ARGUMENTS` before drawing
 2. Make diagrams accurate — use actual file paths, field names, and component names from the code
 3. Keep diagrams focused — one clear thing per diagram
 4. Use consistent box-drawing characters (`┌ ┐ └ ┘ │ ─ ├ ┤ ┬ ┴ ┼ ▶ ◀ ▲ ▼`)

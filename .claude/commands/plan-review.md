@@ -26,7 +26,7 @@ arguments:
 
 ## Step 1: Read the Spec
 
-Read `$ARGUMENTS.spec` in full. Extract:
+Read `$ARGUMENTS` (the spec doc path) in full. Extract:
 - Every file, table, schema, type, component, and service referenced
 - Every new entity being created
 - Every existing entity being modified

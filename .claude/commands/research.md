@@ -30,10 +30,9 @@ Spawn a Task with `subagent_type: general-purpose` and `model: sonnet` using the
 ```
 # Research Agent
 
-Topic: **$ARGUMENTS.topic**
-Depth: **{{depth | default: "standard"}}**
-{{#if focus}}Focus Area: **$ARGUMENTS.focus**{{/if}}
-Region: **{{region | default: "US"}}**
+Topic: **$ARGUMENTS**
+
+Parse any qualifiers from `$ARGUMENTS` if present: a depth (quick / standard / exhaustive), a focus area (legal, business, ui-design, database, performance, architecture, security, or general), and a region. If no depth is given, default to **standard**; if no region is given, default to **US**. Treat the remainder of `$ARGUMENTS` as the topic to research.
 
 ## Your Role
 

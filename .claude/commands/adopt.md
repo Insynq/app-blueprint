@@ -195,7 +195,7 @@ Default to yes (Enter accepts). Don't block.
 
 After sanity checks pass, summarize what's about to happen. Wait for user confirmation before proceeding.
 
-**If `$ARGUMENTS.minimal` is set, present the minimal version:**
+**If `$ARGUMENTS` includes `minimal`, present the minimal version:**
 
 ```
 /adopt --minimal — discovery skipped
@@ -241,7 +241,7 @@ Default to yes (Enter accepts). If the user declines, exit cleanly.
 
 **If declined:** print "OK — no changes made. Re-run /adopt when ready." and stop.
 
-**If `$ARGUMENTS.minimal` is set, after this confirmation jump directly to Step 6 (CLAUDE.md merge — lightweight branch).** Then Step 7. Skip Steps 3, 4, 5.
+**If `$ARGUMENTS` includes `minimal`, after this confirmation jump directly to Step 6 (CLAUDE.md merge — lightweight branch).** Then Step 7. Skip Steps 3, 4, 5.
 
 ---
 
@@ -357,7 +357,7 @@ Wait for user input. If they correct anything, update the draft. Hold the approv
 
 ## Step 4 — Draft Project-State KBs
 
-> **If `$ARGUMENTS.minimal` is set, skip this entire step.** Jump to Step 6.
+> **If `$ARGUMENTS` includes `minimal`, skip this entire step.** Jump to Step 6.
 
 Goal: write proposed contents for `KB_1_Architecture.md`, `KB_7_UI_Patterns.md`, and `KB_9_Screen_Catalog.md` based on auto-detection from the repo. **Show each draft to the user before writing.** Never write KB content without explicit approval.
 
@@ -535,7 +535,7 @@ Default leave. If [k], guide the user through Phase 1 (problem) and Phase 3 (sco
 
 ## Step 5 — Audit Existing User KBs
 
-> **If `$ARGUMENTS.minimal` is set, skip this entire step.** Jump to Step 6.
+> **If `$ARGUMENTS` includes `minimal`, skip this entire step.** Jump to Step 6.
 
 Goal: surface every `docs/KB_*.md` (and any user-authored docs in `/docs/`) that's not framework-managed, then check whether the symbols/files/hooks/tables it references still exist in the current codebase. Bucket each file by staleness, then ask the user per-file what to do.
 
@@ -873,7 +873,7 @@ Count overlap with the user's H2 headings. If `user_heading_overlap < 3`, fall b
 
 ### 6c. Section-by-section merge (default path)
 
-**If `$ARGUMENTS.minimal` is set, only process the framework-owned sections (Reference Documents, Custom Commands, KB Maintenance). Skip the project-owned section walk.**
+**If `$ARGUMENTS` includes `minimal`, only process the framework-owned sections (Reference Documents, Custom Commands, KB Maintenance). Skip the project-owned section walk.**
 
 For each H2 section in the framework template, in framework order:
 
@@ -1023,7 +1023,7 @@ Behavior:
 
 ### 6f. Lightweight merge (`--minimal` mode)
 
-If `$ARGUMENTS.minimal` is set, the merge is minimal:
+If `$ARGUMENTS` includes `minimal`, the merge is minimal:
 
 1. Backup as 6a.
 2. Read user's CLAUDE.md and framework template.

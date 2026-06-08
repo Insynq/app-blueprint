@@ -20,13 +20,21 @@ If `docs/CHANGELOG.md` exists, read it. Note the most recent entry's date and/or
 
 ### Step 2: Get Commit History
 
+If `$ARGUMENTS` provides a since-ref (a tag, sha, or date — e.g. `v1.0.0` or `2026-01-01`), run the log over `<since>..HEAD`; otherwise log the full history. Substitute the concrete ref yourself — never pass the literal `$ARGUMENTS` or any `{{…}}` into git:
+
 ```bash
-git log {{#if since}}$ARGUMENTS.since..HEAD {{/if}}--format="%H|%ad|%s" --date=short --no-merges
+# with a since-ref:
+git log <since>..HEAD --format="%H|%ad|%s" --date=short --no-merges
+# without a since-ref (full history):
+git log --format="%H|%ad|%s" --date=short --no-merges
 ```
 
-Also get file-change stats per commit to inform bullet points:
+Also get file-change stats per commit to inform bullet points — same since-ref logic, substitute the concrete ref yourself:
 ```bash
-git log {{#if since}}$ARGUMENTS.since..HEAD {{/if}}--stat --no-merges --format="COMMIT|%H|%ad|%s" --date=short | head -200
+# with a since-ref:
+git log <since>..HEAD --stat --no-merges --format="COMMIT|%H|%ad|%s" --date=short | head -200
+# without a since-ref (full history):
+git log --stat --no-merges --format="COMMIT|%H|%ad|%s" --date=short | head -200
 ```
 
 If `git log` returns no output (empty result):
@@ -47,11 +55,13 @@ Skip: dependency bumps, formatting-only commits, merge commits, "fix typo" commi
 For each group, write:
 
 ```markdown
-## YYYY-MM-DD{{#if phase}} — Phase X.X:{{/if}} Short descriptive title
+## YYYY-MM-DD — Short descriptive title
 - [What was added — specific, not vague]
 - [What was changed or fixed]
 - [What was removed, if notable]
 ```
+
+(If the changelog tracks phases, include ` — Phase X.X:` between the date and the title, e.g. `## YYYY-MM-DD — Phase X.X: Short descriptive title`.)
 
 Rules:
 - Lead bullets with action verbs: Added, Fixed, Removed, Replaced, Moved, Extended

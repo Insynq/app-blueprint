@@ -62,6 +62,33 @@ arguments:
   punctuation. The top-level `description` may use em dashes, parentheses, and arrows unquoted, but
   must not contain `: ` unquoted.
 
+### Referencing arguments in the body (read this — it's the #1 authoring bug)
+
+The runner substitutes exactly **one flat string**, `$ARGUMENTS` — everything the user typed after
+the command name. That is the *only* substitution. The frontmatter `arguments:` block documents
+intent; it does **not** create named variables. These forms do NOT work — they survive as literal
+text and leak into prompts, commits, or (worse) into a tool that receives them:
+
+- ❌ Dotted / named access — `$ARGUMENTS.topic`, `$ARGUMENTS.target-version`
+- ❌ Handlebars conditionals / blocks — `{{#if focus}}…{{/if}}`, `{{#unless file}}…{{/unless}}`
+- ❌ Handlebars filters / defaults — `{{depth | default: "standard"}}`
+
+Write argument handling as **prose the agent interprets**, never as template syntax:
+
+- **One argument** → reference `$ARGUMENTS` directly: `Topic: **$ARGUMENTS**`.
+- **An optional argument** → a prose conditional: `If $ARGUMENTS names a focus area, scope to it;
+  otherwise cover the full surface.` Never wrap it in `{{#if}}`.
+- **Multiple arguments** → declare the shape, then tell the agent to parse the flat string:
+  `Arguments: [target-version] [allow-downgrade] [dry-run] (space-separated, all optional). Read
+  them from $ARGUMENTS — the first token is the target version…`
+- **Never pipe raw `$ARGUMENTS` into a deterministic tool.** Compute the concrete value first.
+  `git log {{#if since}}$ARGUMENTS.since..HEAD{{/if}}` reaches `git` as literal junk and errors;
+  instead instruct: "If $ARGUMENTS provides a since-ref, run `git log <ref>..HEAD`, else `git log`."
+
+> This single mistake leaked into ~15 commands before it was caught. When you add or edit a command,
+> grep your file for `$ARGUMENTS\.` and `{{` before shipping — both should be empty (except prose
+> that is explicitly *naming* the anti-pattern, like this section).
+
 ---
 
 ## 3. Naming

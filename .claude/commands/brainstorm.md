@@ -21,7 +21,7 @@ Spawn a Task with `subagent_type: general-purpose` using the prompt below. The o
 ```
 # Brainstorm Orchestrator
 
-Topic: **$ARGUMENTS.topic**
+Topic: **$ARGUMENTS**
 
 ## Your Role
 

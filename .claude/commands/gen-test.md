@@ -27,7 +27,7 @@ Also read `docs/LESSONS.md` if it exists — skim for entries relevant to testin
 
 ### Step 2: Read the Source File
 
-Read `$ARGUMENTS.file` completely. Understand:
+Read `$ARGUMENTS` (the target file) completely. Understand:
 - What the code does
 - What it depends on (imports, external calls)
 - What behaviors are worth testing

@@ -25,7 +25,7 @@ Spawn a Task with `subagent_type: general-purpose` using the prompt below.
 ```
 # Unify Agent
 
-Problem: **$ARGUMENTS.description**
+Problem: **$ARGUMENTS**
 
 ## Your Role
 
