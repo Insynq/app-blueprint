@@ -100,6 +100,19 @@ If `$ARGUMENTS` provides a baseline (a path to a prior audit-findings doc), read
 
 Remove duplicate findings that appear in multiple domain audits. Keep the most detailed version.
 
-### 4. Save Report
+### 4. Re-grounding + Refutation Pass (load-bearing findings)
 
-Write the compiled report to `docs/SECURITY_AUDIT_[DATE].md`.
+> **`Installed, not yet proven in a live run.`**
+
+The 3 domain subagents ran their **audit checklists only** — they did NOT run the per-domain re-grounding + refutation (that lives in each command's "After Subagent Returns", executed by the orchestrating session, not the spawned Explore). So this merged audit must run it once, on the **merged + deduped** load-bearing set across all three domains. This is the same discipline as `/audit-code` / `/audit-rls` / `/audit-infra` Step A + B — see those for the full mechanic.
+
+1. **Re-ground (Step A):** for every Critical/High finding and every finding in the security-critical / irreversible class (auth/RLS bypass, secret/PII exposure, destructive migration, webhook signature/idempotency, payment-path, public storage, CORS), re-derive it against the **live source this run** — the actual policy/migration/config/handler — never on the domain subagent's prose summary or a `file:line` alone. Quote what you read.
+2. **Refute (Step B):** group the load-bearing findings by security-class **category** (typically 1–3 per domain), and for each spawn **one fresh `Explore` agent** given only the claims + `file:line` with the KILL mandate. Record a **Refutation Ledger** (ID | Domain | Finding | Refuter verdict | Confidence | Evidence) and fold it into the report below.
+3. **Cost escape-hatch (BLOCKER):** if the merged load-bearing set spans more than ~4–5 distinct security-class categories, **halt and escalate** — a release surface too broad to refute cheaply needs scoping before it ships.
+4. **Mechanical tally + blind-spot honesty:** a finding leaves the Critical/High list only if its refuter graded it `REFUTED` with cited contradicting evidence; any `CONFIRMED`/`OVERSTATED`-still-High stays. If the load-bearing set was empty, state verbatim — *"Refutation pass: no-op — no load-bearing findings surfaced. A clean verdict means the audits found nothing, NOT that an independent skeptic verified the surface is clean."*
+
+The Refutation Ledger supersedes the raw domain verdicts in the saved report.
+
+### 5. Save Report
+
+Write the compiled report (including the Refutation Ledger) to `docs/SECURITY_AUDIT_[DATE].md`.

@@ -54,6 +54,35 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.2.0] - 2026-06-26
+
+Reverse sister-framework adoption: ports agent-blueprint's verification & safety-discipline layer (its v0.4.0–v0.5.1 work) into app-blueprint, reframed for web apps. The change-set was field-validated against 12 real downstream transcripts (9 eXp Onboarding + 3 Kai-App), which **inverted** the original draft's priorities — so the additions are ordered by what the field actually proved. Spec: `docs/verification-discipline-adoption-spec.md` (LOCKED 2026-06-26).
+
+**Provenance discipline applied to this very release.** The proven-core additions (A3 ship truth-gate, A4 provenance) are **field-attested** — 6 + 5 confirmed downstream instances incl. a re-verified prod outage. The adversarial-skeptic and smoke-debt additions (A1, A2, N1, N2) are installed but their *specific mechanisms* have **not yet fired in a live run** — each carries the literal `Installed, not yet proven in a live run.` flag in its own prose. B1 ships as a reference KB only (0 field instances; silent-open is a runtime phenomenon absent from dev transcripts).
+
+### Added
+- **`docs/Obs KBs/OBS_KB_5_Defensive_Writes.md`** (reference KB, NOT an audit gate) — Primitive 0 (close the capability: don't expose mass-delete / service-role-bypass; gate rare needs behind a human-confirmed UI) + Primitive 9 (fail loud or fail closed; never `catch → log → continue` silent-open), web-reframed for Server Actions / outbox / webhooks / migrations. Owns the *error surface* of a write; JOB_KB_1 owns the *work-claiming surface* (disambiguated, cross-referenced in both indexes). `Installed, not yet proven in a live run.`
+- **Re-grounding + independent Refutation Pass** in `/audit-code`, `/audit-rls`, `/audit-infra`, `/audit-full` — every load-bearing security-class finding (or all-clear) is re-derived against the **live SQL/policy/config this run** (never a stale `file:line` citation), then an independent skeptic agent is spawned **per security-class category** to try to KILL it; a Refutation Ledger supersedes the verdict, with a cost escape-hatch BLOCKER and a blind-spot disclaimer for an empty set. `Installed, not yet proven in a live run.`
+- **Independent skeptic at `/debug`'s three-strikes escape hatch** — replaces the debugger's self-asserted "the assumption I think is false" with a fresh agent that names the false premise from the primary artifact. `Installed, not yet proven in a live run.`
+- **Ground-first primary-artifact anchor** — mandatory in `/debug` (Step 1: quote the literal error/test/query verbatim before hypothesizing), optional/best-effort in `/investigate`. `Installed, not yet proven in a live run.`
+- **N1 — deferred-smoke debt rollup + phase-boundary forcing function** — `smoke-tests-pending.md` gains a standing "Deferred prod smokes" ledger; `/ship` Step 3.6 surfaces the accumulated count at every phase boundary and forbids deferring a smoke past a boundary without a logged per-smoke user grant (kills the self-authorized "authorized posture" ratchet). `Installed, not yet proven in a live run.`
+- **N2 — mandatory live-smoke gate for service-boundary flows** — a `live-required` tag for auth / email / webhook / external-API / payment flows; `/ship` Step 3.5 treats it as gating (unit/typecheck/pgTAP green is not sufficient), wired into the workflow Phase 9 lane discipline. `Installed, not yet proven in a live run.`
+- **A5 — `/plan-review` Step 6 Lockdown Check** — back-fills the decision-discipline layer app-blueprint never received from its own retro: scans for unresolved forks, verifies each decision is recorded with a cited evidence source, and on pass writes the `> **Status: LOCKED YYYY-MM-DD**` header that `/orchestrate` Phase 6 and `/implement` key on.
+
+### Changed
+- **`/ship` Step 3.5** — smoke truth-gate hardened: a never-run / `Pending` / absent in-scope smoke now surfaces as `Unverified at ship: <id>` and may never launder into "Ship Complete"; added a reconciliation rule (defer only with a named follow-up phase or owner+date), a re-confirmation gate (a bare user "pass" ≠ test-execution evidence), and the N2 `live-required` gate. **Field-attested (A3).**
+- **`/ship` Step 5** — commit composition gains a provenance discipline: tag carried claims `[verified]`/`[relayed]`, never harden a hedge, never let front-confidence exceed back-caveats, carry any `Unverified at ship` line verbatim. **Field-attested (A4-provenance).**
+- **`/brainstorm` Phase 2** — Explore-digest claims carried into options must be provenance-tagged `[verified]`/`[relayed]`; an option's confidence may not exceed the strongest caveat behind it. **Field-attested (A4-provenance).**
+- **`docs/MULTI_AGENT_WORKFLOW.md`** — Phase 8 wiring-lane discipline reframed to name the existing trace-verifier ("read it expecting errors in both directions"; don't build a parallel verify-the-synthesis step); Phase 9 gains the N2 service-boundary live-smoke note.
+- **`CLAUDE.md` Patterns** — adds a "Verification & safety disciplines (framework-provided)" block naming the lockdown convention, re-grounding+refutation, ground-first anchor, truth-gate, deferred-smoke rollup, service-boundary gate, and fail-loud-or-closed (reference).
+- **`docs/Obs KBs/OBS_KB_00_Index.md` · `docs/Job KBs/JOB_KB_00_Index.md`** — OBS_KB_5 added to the file index, dependency graph, and cross-cutting Always rules, with the OBS_KB_5 ↔ JOB_KB_1 error-surface vs. work-claiming-surface disambiguation.
+- **`.framework-manifest.json`** — `version` synced from a drifted `0.1.5` to `0.2.0` (it had fallen behind `package.json`).
+
+### Migration Notes
+- **`docs/smoke-tests-pending.md` is project-owned (skip on update).** Adopters who already have this file will NOT auto-receive the N1 "Deferred prod smokes" rollup section or the N2 `live-required` tag — merge them manually from the canonical template.
+- **`CLAUDE.md` is hybrid (sibling on update).** The new Patterns block arrives as `CLAUDE.md.framework` alongside the adopter's file — merge the discipline pointers in by hand.
+- The A1/A2/N1/N2 disciplines ship flagged `Installed, not yet proven in a live run` — the first downstream run that exercises a refutation pass, a three-strikes skeptic, a deferred-smoke rollup, or a `live-required` gate is calibration data; capture how it behaved.
+
 ## [0.1.10] - 2026-06-01
 
 Fixes a systemic argument-substitution bug across the command library and documents the convention that prevents it. The runner substitutes only a single flat `$ARGUMENTS` string, but ~15 commands used dotted access (`$ARGUMENTS.topic`) and Handlebars (`{{#if focus}}`, `{{#unless file}}`, `{{depth | default}}`) the runner does not process — so those tokens leaked as literal text into prompts and commits. Most were cosmetic (the agent usually recovered intent), but `changelog.md` was a real functional break: the literal `{{#if since}}$ARGUMENTS.since..HEAD{{/if}}` reached `git log` as a bogus revision arg and errored. Found by a downstream adopter (flagged 6; a full scan surfaced 15).

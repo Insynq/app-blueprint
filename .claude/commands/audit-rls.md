@@ -169,6 +169,32 @@ Scan migrations for:
 
 ## After Subagent Returns
 
-1. **If Critical issues** → create migration to fix immediately
-2. **If Warnings** → evaluate if intentional, document or fix
-3. **If all clear** → note audit complete in project docs
+> **`Installed, not yet proven in a live run.`** RLS is the highest-value target for this discipline — the field cases that motivated it were *stale-citation* failures (an audit declared a table safe by trusting a spec's outdated policy line; a smoke later found the policy had no tenant arm). Run it; treat early firings as calibration.
+
+### Step A: Re-derive every load-bearing policy against the LIVE SQL this run (the load-bearing mechanic)
+
+A policy citation goes stale the moment a later migration alters it. Before accepting any **PASSED** verdict or acting on any **Critical/High** RLS finding, the **main session** re-derives the policy against the **live migration/policy SQL this run** — read the actual `CREATE POLICY` / `ALTER POLICY` / helper-function body yourself and quote the `USING` / `WITH CHECK` clause. **Never** accept a policy as safe (or unsafe) on the auditor's prose, a spec's description, or a `file:line` citation alone. The specific failure this catches: an audit trusting `"can_view_x is scoped correctly"` from a spec while the live policy, after a later migration, no longer enforces the tenant/sponsor arm. A policy verdict resting only on relayed text is `[relayed]`, not verified.
+
+### Step B: Refutation Pass (independent — supersedes the provisional verdict)
+
+The auditor's `PASSED`/`NEEDS CHANGES` checkbox is that subagent's **self-report**. Refute the load-bearing findings from a fresh context.
+
+**Load-bearing set:** every **Critical/High** finding, **and** every finding in the RLS security-critical class *regardless of assigned severity* — overly-permissive / bypass policy, audit-table immutability violation, `SECURITY DEFINER` RLS-bypass, cross-table JOIN leak, public/`anon` grant.
+
+**Refute per security-class *category*, not per finding** (bounds cost — an audit can surface dozens of policy rows). Group into categories — typically *auth-bypass* (overly-permissive / direct-role / unscoped grant), *audit-table* (UPDATE/DELETE on immutable log tables), *permission-style* (cross-table JOIN leak / SECURITY DEFINER scope) — usually 1–3. For each, **spawn one fresh `Explore` agent** given ONLY the claims + `file:line`, with the inverted mandate:
+
+> "Findings: [claims] at [file:line]. Your job is to **KILL** them. Read the live policy/migration SQL yourself and quote the clause that contradicts each — or state what `USING`/`WITH CHECK` text *would* have falsified it. Default to skepticism; do not assume the findings are correct."
+
+Each refuter returns, per finding, **CONFIRMED** · **OVERSTATED** · **REFUTED** with a confidence and quoted SQL. Record a **Refutation Ledger** (Table | Policy | Refuter verdict | Confidence | Quoted SQL) that supersedes the binary checkbox.
+
+**Cost escape-hatch (BLOCKER).** If the load-bearing set spans more than ~3–4 distinct security-class categories, **halt and escalate the audit itself** rather than spawning unbounded refuters — a policy surface too broad to refute cheaply needs a scoped re-audit.
+
+**Mechanical tally:**
+- Treat the result as `PASSED` only if **every** load-bearing finding came back `REFUTED`. Any `CONFIRMED`/`OVERSTATED`-still-Critical → `NEEDS CHANGES`.
+- **Completeness caveat (RLS-specific):** refutation tests the findings the auditor *surfaced* — it cannot catch a table the auditor never examined. Confirm the Table Coverage Matrix lists every table the migrations create before trusting an all-clear; a missing row is a gap refutation will never close.
+- **Blind-spot honesty:** if the load-bearing set was empty, state verbatim — *"Refutation pass: no-op — no load-bearing RLS findings surfaced. A clean verdict means the audit found nothing, NOT that an independent skeptic verified the policies are airtight."*
+
+### Then act on the ledger
+1. **If Critical issues survive refutation** → create migration to fix immediately
+2. **If Warnings (OVERSTATED / lower-severity)** → evaluate if intentional, document or fix
+3. **If all clear** (every load-bearing finding `REFUTED`, coverage matrix complete) → note audit complete in project docs, carrying the no-op caveat if it applies

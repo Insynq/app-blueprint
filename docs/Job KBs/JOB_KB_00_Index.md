@@ -70,6 +70,7 @@ Cross-folder dependencies:
 JOB_KB_1   → SB_KB_6     (the transactional outbox producer this KB processes)
 JOB_KB_1   → SB_KB_10    (Resend Idempotency-Key — the canonical idempotent receiver)
 JOB_KB_1   → AUTH_KB_6   (account anonymization is exactly this pattern)
+JOB_KB_1   ↔ OBS_KB_5   (work-claiming surface ↔ error surface: retry / backoff / dead-letter / lease live HERE; "don't swallow the write error — fail loud or closed" lives in OBS_KB_5. They compose, not duplicate)
 JOB_KB_2   → SB_KB_8     (Vercel hosting context)
 JOB_KB_3   → SB_KB_12    (RLS implications of queue tables — service-role-only access)
 JOB_KB_4   → AUTH_KB_6   (anonymization is a multi-step workflow Inngest handles cleanly)

@@ -8,6 +8,23 @@ This is the single source of truth for outstanding manual verification work. Don
 
 ---
 
+## Deferred prod smokes (debt rollup)
+
+> **Standing ledger of cross-phase verification debt.** Every smoke that ships `Unverified` / deferred (per `ship.md` Step 3.5 reconciliation rule) is recorded here with an owner and a deferral date, so the accumulated unverified risk stays visible across phases instead of quietly compounding. `ship.md` Step 3.6 reads this section at every phase boundary, surfaces the count, and **forbids deferring any row past a phase boundary without a logged, per-smoke user grant** — no blanket "we've been shipping fine" posture clears the gate.
+
+> **Status: empty.** No deferred prod smokes. Add a row the moment a smoke ships `Unverified`.
+
+| Smoke ID | Title | Owner | Deferred on | Rode ship | Must clear by | Per-smoke user grant? |
+|---|---|---|---|---|---|---|
+| _(none)_ | | | | | | |
+
+- **Owner** — who is on the hook to run it. **Deferred on** — date it first shipped unverified. **Rode ship** — the commit/version it deferred under.
+- **Must clear by** — the named follow-up phase, or an explicit owner+date deadline. A row with no clear-by is not a valid deferral — run the smoke or block the ship.
+- **Per-smoke user grant?** — `yes (date)` once the user has explicitly authorized carrying *this specific* smoke across a phase boundary; blank means it has not been granted and cannot cross the next boundary.
+- Remove a row when its smoke flips to `Passed` (move the detail to git history).
+
+---
+
 
 ## How to use this doc
 
@@ -39,6 +56,12 @@ Every test must be tagged with a **Lane** at write-time. Lane drives how the tes
 - Author tags Lane at write-time. PM does not retroactively re-tag (except `wiring` → `visual` when the verifier returns `trace-fail / wrong lane`).
 - For `Lane: wiring`, author also names a **hypothesized starting point** (file or component) so PM has the input the verifier needs.
 - A test is one Lane. If a feature has both wiring AND visual concerns, write two tests with separate IDs.
+
+## Service-boundary tag (`live-required`)
+
+Orthogonal to Lane, a test may carry a **`live-required`** tag. Use it for any **service-boundary flow** — auth, email/outbox→delivery, webhooks, external-API or payment round-trips — whose failure modes unit/typecheck/pgTAP green **cannot** model (auth-hook side effects, link encoding across a mail provider, OAuth/PKCE token compatibility). The canonical incident: 213/213 unit tests + a clean typecheck shipped a completely non-functional auth/email flow.
+
+A `live-required` smoke is **gating, not deferrable-by-default**: `ship.md` Step 3.5 §8 refuses to let it ship `Passed` on unit/typecheck/pgTAP alone — it must be run live end-to-end before prod exposure, or explicitly user-waived with a logged per-smoke grant (recorded in the [Deferred prod smokes](#deferred-prod-smokes-debt-rollup) rollup). Tag at write-time; a `live-required` test is usually `Lane: integration`.
 
 ## Each test must
 
@@ -81,6 +104,7 @@ When adding the first feature, copy the block below into the "(No pending tests)
 |---|---|
 | **Status**                    | Pending |
 | **Lane**                      | sql \| wiring \| visual \| integration |
+| **live-required?**            | yes \| no — `yes` for service-boundary flows (auth / email / webhook / external-API / payment); gating per ship.md Step 3.5 §8 |
 | **Hypothesized starting point** | <file or component — REQUIRED for wiring lane, omit otherwise> |
 | **Trace verified**            | <date> (<who/which verifier>) — populated during Phase 9 if applicable |
 

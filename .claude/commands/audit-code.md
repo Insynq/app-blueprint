@@ -226,6 +226,35 @@ Flag any server-side handler that processes these WITHOUT rate limiting:
 
 ## After Subagent Returns
 
-1. **If APPROVED** → proceed with implementation
-2. **If NEEDS CHANGES** → address recommendations, then re-audit or proceed with fixes
-3. **If major concerns** → consider running `/plan` to redesign approach
+> **`Installed, not yet proven in a live run.`** The re-grounding + refutation discipline below is ported from agent-blueprint's field-proven pattern but has not yet fired in an app-blueprint live run. Run it; treat its first few firings as calibration.
+
+### Step A: Re-ground every load-bearing security finding against the live source (the load-bearing mechanic)
+
+The audit above came from a single Explore subagent reading the codebase **once**. Before acting on any **security-class** finding (or accepting any security-class *all-clear*), the **main session** re-derives it against the **live source this run** — the actual policy, migration, server handler, or query — never on the auditor's prose summary or a `file:line` citation alone (citations go stale across migrations; a summary can quietly drop the qualifier that flips the verdict). Quote the contradicting or confirming lines you read yourself. A security claim that rests only on the relayed audit text is `[relayed]`, not verified.
+
+### Step B: Refutation Pass (independent — supersedes the provisional verdict)
+
+The auditor's `APPROVED`/`NEEDS CHANGES` checkbox is that subagent's **self-report**. Refute the load-bearing findings from a fresh context that never saw the audit's reasoning.
+
+**Load-bearing set** (the only findings refuted — keeps cost bounded):
+- every **Critical/High** finding, **and**
+- every finding in the **web security-critical / irreversible class** — *regardless of the severity the auditor assigned* (a fixed allowlist the producing auditor cannot shrink): auth / data-bypass, secret or PII exposure, destructive or irreversible migration, webhook signature/idempotency, payment-path.
+
+Medium/Low/style/over-engineering rows are NOT refuted — they ride the auditor's self-report.
+
+**Refute per security-class *category*, not per finding** (bounds cost on audits that surface many related rows). Group the load-bearing findings into categories — e.g. *auth/data-bypass*, *secret/PII exposure*, *payment-path*, *webhook-idempotency* — typically 1–3. For each category, **spawn one fresh `Explore` agent** (a context that never saw the audit), given ONLY the finding claims + their `file:line`, with the inverted mandate:
+
+> "Findings: [claims] at [file:line]. Your job is to **KILL** them. Read the primary source yourself and find the strongest evidence each is wrong, overstated, or already mitigated elsewhere — quote the contradicting lines. If you cannot refute one after a real search, say so and state what observation *would* have falsified it. Default to skepticism; do not assume the findings are correct."
+
+Each refuter returns, per finding, **CONFIRMED** (tried and failed to kill it — quote the empty/contrary search) · **OVERSTATED** (real but narrower/lower-severity — cite the narrowing evidence) · **REFUTED** (contradicted — cite the killing `file:line`), with a confidence. Record a **Refutation Ledger** (ID | Finding | Refuter verdict | Confidence | Refuting/weakening evidence) that supersedes the binary checkbox.
+
+**Cost escape-hatch (BLOCKER).** If the load-bearing set spans more than ~3–4 distinct security-class categories, do **not** spawn unbounded refuters — **halt and escalate the audit itself** to the user ("this change has a security-class surface too broad to refute cheaply — it needs a scoped re-audit / redesign"). An audit that can't be refuted cheaply is itself the finding.
+
+**Mechanical tally** (so a bad ledger can't be laundered into a pass):
+- Treat the result as `APPROVED` only if **every** load-bearing finding came back `REFUTED`. Any `CONFIRMED` or `OVERSTATED`-still-High → `NEEDS CHANGES`. A finding leaves the must-fix list only if its refuter graded it `REFUTED` with cited contradicting evidence.
+- **Blind-spot honesty:** if the load-bearing set was empty, state verbatim — *"Refutation pass: no-op — no load-bearing findings surfaced. A clean verdict here means the audit found nothing, NOT that an independent skeptic verified the code is clean."* Refutation tests findings that exist; it cannot surface one the auditor missed.
+
+### Then act on the ledger
+1. **All load-bearing findings `REFUTED` (or none surfaced)** → proceed (carry the no-op caveat if it applies)
+2. **Any `CONFIRMED`/`OVERSTATED`-still-High** → address those recommendations, then re-audit or proceed with fixes
+3. **Major confirmed concerns** → consider running `/plan` to redesign approach

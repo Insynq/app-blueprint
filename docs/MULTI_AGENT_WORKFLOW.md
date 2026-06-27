@@ -183,10 +183,17 @@ Each worker (subagent or separate-window):
 > If the PM hasn't run the check in this exchange, it cannot call the slice verified — it can only
 > say "the worker reports it's done, verifying now." This mirrors the smoke-catalog rule that a code
 > trace never flips a smoke to `Passed`: a claim is never its own proof.
+>
+> **Lane discipline (wiring lane).** For a wiring-lane smoke the worker's summary is the *least*-trustworthy
+> layer — verify it via the trace-verifier contract (below) or an eyeball-per-lane (Phase 9), and read the
+> trace **expecting errors in both directions**: the worker may report working wiring that's broken, and a
+> trace can flag correct wiring as suspect. The point isn't to confirm the summary; it's to find where it's
+> wrong. This is the existing trace-verifier doing its job — don't build a parallel "verify the synthesis" step.
 
 ### Phase 9: Smoke tests
 
 - PM identifies integration-level smoke tests workers couldn't run (workers see only their slice; integration smokes need the full picture).
+- **Service-boundary flows need a live smoke before prod exposure.** Any slice touching auth, email/outbox→delivery, webhooks, or external-API/payment round-trips carries failure modes unit/typecheck/pgTAP green cannot model — tag its smoke `live-required` and run it end-to-end before shipping. Unit-green is not a substitute (see `ship.md` Step 3.5 §8 / N2). `Installed, not yet proven in a live run.`
 - PM adds new smoke tests to `docs/smoke-tests-pending.md` with stable IDs.
 - PM hands smoke tests to the user as copy-paste-ready instructions.
 - User runs smokes, reports passes/blockers.

@@ -47,7 +47,9 @@ This is not a guideline you weigh against time pressure. **Violating the letter 
 
 ### Escape hatch — when you're stuck
 
-If **three** fix attempts have failed, STOP. Do not try a fourth variation. Three failed fixes is not a failed hypothesis — it's a signal the model of the problem is wrong (wrong layer, wrong abstraction, wrong assumption about how the system works). Report to the user: what you tried, what each attempt assumed, and the assumption you now think is false. Re-characterize from Step 1 with that assumption discarded.
+If **three** fix attempts have failed, STOP. Do not try a fourth variation. Three failed fixes is not a failed hypothesis — it's a signal the model of the problem is wrong (wrong layer, wrong abstraction, wrong assumption about how the system works).
+
+**Spawn an independent skeptic before you self-diagnose** (`Installed, not yet proven in a live run.`). A debugger that has been wrong three times running is the least reliable narrator of *why* — its guess at "the assumption I now think is false" is shaped by the same broken model that produced the three misses. So spawn **one fresh `Explore` agent** (a context that never saw your attempts) given ONLY: (a) the primary artifact verbatim (the literal error / failing test / failing query — see Step 1), and (b) the three hypotheses you tried with what each *assumed*. Mandate: *"All three of these were wrong. Identify the shared assumption they rest on that the primary artifact actually contradicts — quote the contradicting evidence. Do not propose a fourth fix; name the false premise."* The skeptic's independent diagnosis **replaces** your self-asserted false assumption. Report both to the user (what you tried, what each assumed, and the skeptic's identified false premise), then re-characterize from Step 1 with that premise discarded.
 
 ## Step 0: Read Project Context
 
@@ -58,9 +60,11 @@ Read `CLAUDE.md` and `docs/LESSONS.md` (if it exists). Extract:
 
 ## Step 1: Characterize the Symptom
 
-Before investigating code, answer these questions precisely:
+**Anchor on the primary artifact first (mandatory).** `Installed, not yet proven in a live run.` Before answering anything else, get the **literal primary artifact** in front of you and quote it **verbatim** — the exact error text + stack frame, the failing test name + assertion, the Sentry event, the failing RLS query and its result, the network response body/status. Derive the entry point from what the artifact *shows*, not from what the issue description *implies* (descriptions are a human's already-interpreted theory; the artifact is ground truth). If the artifact is not retrievable (no repro, no captured error), say so explicitly and mark every downstream claim **UNVERIFIED** — do not substitute a plausible reconstruction for the real thing. The field failure mode this prevents: chasing a described cause (cache → closure → stale-render) through several wrong fixes when the actual error line was sitting in the artifact the whole time.
 
-1. What is the **exact behavior**? (Not what you think is wrong — the literal, observable symptom)
+Then, with the artifact quoted, answer these questions precisely:
+
+1. What is the **exact behavior**? (Not what you think is wrong — the literal, observable symptom from the artifact above)
 2. When does it happen? (Always / sometimes / after specific action / only in specific context)
 3. What **layer** is the symptom in?
    - **UI** — visual layout, scroll, click, focus, interaction
@@ -263,6 +267,6 @@ If the root cause reveals a pattern worth adding to `docs/LESSONS.md`, note it e
 
 - **Hypothesis confirmed + fix implemented** → run `/gen-test` to add a regression test, then `/ship`
 - **Hypothesis was wrong** → re-read the investigation, re-characterize the symptom, re-spawn debug agent with the corrected hypothesis
-- **Third hypothesis in a row was wrong** → stop re-spawning. Per the Iron Law's escape hatch, three misses means the model of the problem is wrong, not the hypothesis. Surface the failing assumption to the user and re-scope (often this means `/investigate` on the broader subsystem, or questioning an architectural assumption) before another fix attempt
+- **Third hypothesis in a row was wrong** → stop re-spawning. Per the Iron Law's escape hatch, three misses means the model of the problem is wrong, not the hypothesis. Spawn the independent skeptic (escape hatch) to name the false premise rather than self-diagnosing it, surface both to the user, and re-scope (often this means `/investigate` on the broader subsystem, or questioning an architectural assumption) before another fix attempt
 - **LESSONS.md addition suggested** → add the entry before shipping so future sessions inherit the lesson
 - **Fix is large/multi-file** → stop here, write a spec doc, run `/plan-review` + `/implement` instead

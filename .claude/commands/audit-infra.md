@@ -226,7 +226,26 @@ grep -r "sk_live\|secret_key\|private_key\|password" supabase/functions/ src/api
 
 ## After Subagent Returns
 
-1. **If Critical issues** → fix immediately (especially secret exposure)
-2. **If Missing headers** → add to deployment config (low-risk change)
+> **`Installed, not yet proven in a live run.`** The re-grounding + refutation discipline below is ported from agent-blueprint's field-proven pattern; treat early app-blueprint firings as calibration.
+
+### Step A: Re-ground every load-bearing infra finding against the live config (the load-bearing mechanic)
+
+Before acting on any **security-critical** infra finding (or accepting a clean verdict on one), the **main session** re-derives it against the **live config this run** — read the actual `netlify.toml`/`vercel.json` headers block, the `.env`/`.env.example` contents, the CORS source, the bucket policy — never on the auditor's prose or a `file:line` alone. Quote the line you read yourself. A "secret is not exposed" / "CORS is locked down" claim resting only on relayed audit text is `[relayed]`, not verified.
+
+### Step B: Refutation Pass (independent — supersedes the provisional verdict)
+
+The auditor's `PASSED`/`NEEDS CHANGES` checkbox is that subagent's **self-report**. Refute the load-bearing findings from a fresh context.
+
+**Load-bearing set:** every **Critical/High** finding, **and** every finding in the infra security-critical class *regardless of assigned severity* — secret / service-role-key exposure (client-prefixed env var, committed `.env`), CORS wildcard / permissive fallback, public storage bucket exposing private data.
+
+**Refute per security-class *category*, not per finding** (typically 1–3: *secret-exposure*, *CORS*, *storage*). For each, **spawn one fresh `Explore` agent** given ONLY the claims + `file:line`, mandate: *"Read the live config yourself and KILL each finding — quote the contradicting config line, or state what would have falsified it. Default to skepticism."* Each refuter returns per finding **CONFIRMED** · **OVERSTATED** · **REFUTED** with quoted config → a **Refutation Ledger** that supersedes the checkbox.
+
+**Cost escape-hatch (BLOCKER).** More than ~3–4 distinct security-class categories → **halt and escalate the audit itself** rather than spawning unbounded refuters.
+
+**Mechanical tally + blind-spot honesty:** `PASSED` only if **every** load-bearing finding came back `REFUTED`; any surviving `CONFIRMED`/`OVERSTATED`-still-High → `NEEDS CHANGES`. If the load-bearing set was empty, state verbatim — *"Refutation pass: no-op — no load-bearing findings surfaced. A clean verdict means the audit found nothing, NOT that an independent skeptic verified the infra is clean."*
+
+### Then act on the ledger
+1. **If Critical issues survive refutation** → fix immediately (especially secret exposure)
+2. **If Missing headers** → add to deployment config (low-risk change; headers are not in the security-critical refutation class — they ride the auditor's report)
 3. **If Dependency issues** → create update plan with testing
-4. **If all clear** → note audit complete in project docs
+4. **If all clear** (every load-bearing finding `REFUTED`) → note audit complete in project docs, carrying the no-op caveat if it applies

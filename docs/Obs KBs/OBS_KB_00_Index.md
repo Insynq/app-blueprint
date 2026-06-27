@@ -16,6 +16,7 @@ These files are for Claude. Principles-only docs fail at implementation time. Ev
 | `OBS_KB_2_Error_Tracking.md` | `@sentry/nextjs` v10.x setup via `instrumentation.ts` + `instrumentation-client.ts`; source maps via `withSentryConfig`; `error.tsx` / `global-error.tsx` with manual `captureException`; `withServerActionInstrumentation`; `onRequestError` for RSCs (≥ 8.28.0 + Next 15); `npm:@sentry/deno` (beta) for Edge Functions; user/org context without PII | 🔒 Stack-locked: Sentry SDK + Next.js App Router |
 | `OBS_KB_3_Audit_Logging.md` | Append-only `audit_log` table; three-layer immutability (REVOKE + BEFORE trigger raising on UPDATE/DELETE + RLS INSERT-only); `jsonb` not `json`; native declarative RANGE partitioning + pg_cron (not pg_partman on Supabase); admin-only SELECT; trigger vs explicit DB function vs outbox capture paths | ✅ Portable (Postgres) |
 | `OBS_KB_4_Performance_And_Alerts.md` | pg_stat_statements + canonical `pg_stat_activity` / `pg_locks` / cache-hit / index queries; Supavisor connection visibility (Prometheus only, not `pg_stat_activity`); outbox-lag and DLQ alert queries; Trigger.dev dashboard alerts (terminal-only); Inngest `onFailure` + `inngest/function.failed`; pg_cron → Edge Function → Resend custom alert path (Supabase has no native alerts) | ⚠️ Partial — SQL queries portable; channel integrations stack-locked |
+| `OBS_KB_5_Defensive_Writes.md` | **Reference, not gated.** Two safety primitives for write/side-effect paths: Primitive 0 (close the capability — don't expose mass-delete / service-role-bypass; gate rare needs behind a human-confirmed UI) + Primitive 9 (fail loud or fail closed; never `catch → log → continue` silent-open). Web reframes for Server Actions, outbox, webhooks, migrations. Owns the *error surface* of a write (JOB_KB_1 owns the *work-claiming surface*) | ✅ Portable (principles); examples Next.js + Supabase |
 
 ---
 
@@ -34,6 +35,7 @@ These files are for Claude. Principles-only docs fail at implementation time. Ev
 - Emit structured JSON with discrete fields (`{ userId, orderId, action }`), never string-concatenated messages. Logs are queries, not prose.
 - Capture errors at the boundary: `error.tsx` / `global-error.tsx` (with explicit `Sentry.captureException` in `useEffect` — Sentry does not auto-capture these), Server Action try/catch, Edge Function top-level handler, `onFailure` in Trigger.dev / Inngest. Never silently swallow inside business logic.
 - Re-throw after `captureException` in background-job catch blocks so the platform also marks the run failed and triggers retry/alert paths.
+- On any write/side-effect path, fail **loud** (re-throw / non-2xx / surfaced error state) or fail **closed** (abort + roll back) — never `catch → log → continue` (silent-open). And prefer *not building* a destructive/bulk capability over guarding one. See `OBS_KB_5_Defensive_Writes.md` (reference).
 - Pair every `error`-level log with a Sentry capture. Logs provide context; Sentry handles grouping, replay, and alerting.
 - Treat audit logs and operational logs as distinct systems: audit rows are immutable, retain PII deliberately, are queried by auditors over years; operational logs are ephemeral, redact PII, are queried by engineers over days.
 - Install all three audit immutability layers (REVOKE + trigger + RLS). The BEFORE trigger is the only layer that catches `service_role` — REVOKE and RLS both bypass for owner-equivalent roles.
@@ -66,6 +68,8 @@ OBS_KB_1   ← OBS_KB_2   (Sentry breadcrumbs and `error.digest` cross-correlate
 OBS_KB_1   ← OBS_KB_3   (audit_log.request_id reuses the OBS_KB_1 propagation contract)
 OBS_KB_2   ← OBS_KB_4   (alert-rule routing references the Sentry capture surface OBS_KB_2 sets up)
 OBS_KB_3   ← OBS_KB_4   (alerts on audit-write failure rates use the table OBS_KB_3 defines)
+OBS_KB_2   ← OBS_KB_5   (the fail-loud rule re-throws through the Sentry capture surface OBS_KB_2 owns)
+OBS_KB_3   ← OBS_KB_5   (a failed audit write must be loud — OBS_KB_5 names the failure mode OBS_KB_3's immutability layers assume)
 ```
 
 Cross-folder dependencies:
@@ -84,6 +88,7 @@ OBS_KB_4   → SB_KB_12     (RLS performance tuning — distinct concern, do not
 OBS_KB_4   → JOB_KB_1     (outbox table design + cron.job_run_details caveat)
 OBS_KB_4   → JOB_KB_3     (DLQ table design — alert on rows here)
 OBS_KB_4   → JOB_KB_4     (Trigger.dev / Inngest task structure — alert routing only here)
+OBS_KB_5   ↔ JOB_KB_1     (error surface ↔ work-claiming surface — a worker that fails loud per OBS_KB_5 still needs JOB_KB_1's dead-letter to not lose the row; they compose, not duplicate)
 ```
 
 ---

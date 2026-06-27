@@ -32,6 +32,10 @@ Be extremely thorough. Do NOT stop at the first potential issue. Follow ALL path
 
 ## Investigation Protocol
 
+### 0. Anchor on the Primary Artifact (optional / best-effort)
+
+`Installed, not yet proven in a live run.` If this investigation starts from a concrete symptom — an error, a failing test, a Sentry event, a wrong value on screen — quote that **primary artifact verbatim** first and let what it *shows* steer where you trace, rather than the description's already-interpreted theory. This is **best-effort, not mandatory** here: many `/investigate` runs are exploratory ("how does X work / where does Y live") with no artifact to anchor on, or the PM has already framed the scope — in those cases skip this and proceed to step 1. (For `/debug`, where a symptom always exists, this anchor is mandatory — see `debug.md` Step 1.)
+
 ### 1. Read Project Context First
 
 Read `CLAUDE.md` to understand the project's patterns, conventions, and constraints before diving into code.

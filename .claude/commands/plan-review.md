@@ -143,6 +143,66 @@ After the user makes decisions on each review item, update the spec doc with:
 - New steps added to the implementation order
 - Risks documented in a risk register
 
+## Step 6: Lockdown Check
+
+Final gate: verify the spec has no unresolved architectural forks before declaring it implementable. Run **after** Step 5 (so any decisions surfaced during review have been recorded). A spec that passes Step 6 receives a `Status: LOCKED YYYY-MM-DD` header; a spec that fails has unresolved items listed and does not receive the header.
+
+### 6a: Scan for unresolved-fork patterns
+
+Grep the spec for textual signals that a fork was raised but not closed:
+
+- `[TODO decision]`, `TODO`, `[decide]`, `(decide)` — explicit unresolved markers
+- ` or ` between architectural alternatives (e.g., "use approach A or B")
+- `(a)/(b)/(c)`, `(1)/(2)/(3)` enumerations without a confirmed pick
+- Phrases like `open decision`, `unresolved`, `to be determined`, `TBD`, `revisit`, `figure out later`
+
+For each match: confirm there's an adjacent decision (in the decisions table, an inline "decided: X" annotation, or a step's `**Why:**` field) closing the fork. If none, list it as **UNRESOLVED**.
+
+**Exclusions (avoid false positives).** Self-referential specs — ones that *document* the fork patterns Step 6 detects — generate noise. For every grep hit, skip the match if any of the following apply:
+
+- The match sits inside a fenced code block (```` ``` ```` … ```` ``` ````) — that's example syntax or a template skeleton, not a real unresolved item.
+- The match sits inside a backtick-delimited inline code span (`` `[TODO decision]` ``) — same reason.
+- The match is in a paragraph that describes Step 6 itself, or documents the fork-detection patterns (e.g., a sentence enumerating the patterns to scan for). That's commentary, not content.
+- The match is inside a "Resolved decisions" or post-release "revisit triggers" section (`"revisit if X happens"`, `"revisit in a later release"`) — those are deliberate future milestones, not unresolved forks within this release's scope.
+
+A match qualifies as **UNRESOLVED** only when it represents an actual decision *in this spec's content* that has no corresponding closure.
+
+### 6b: Verify decisions are recorded
+
+Every fork the spec resolves must leave a durable record. Verify each resolved decision is captured in one of the project's decision homes (per Step 5):
+
+- A decisions table in the `Decision | Choice | Reasoning | Date` format (preferred for specs that carry many architectural choices).
+- An inline `**Why:**` annotation on the affected step (for spec-local tactical decisions).
+- A `docs/KB_1_Architecture.md` `## Architecture Decisions` entry (for durable choices a future contributor would relitigate).
+
+Then verify:
+
+- Every fork surfaced in Step 3f Decision Points has a corresponding record.
+- Every review item the user resolved in Step 4 (categorized **DECISION**) has a corresponding record.
+- For table rows: every row has all four columns filled — no empty `Choice` or `Reasoning` cells. For inline/KB entries: each carries a date stamp and a one-line reasoning.
+
+### 6c: Verify exploration evidence is cited
+
+Each decision should reference the artifact that grounds it. Look for:
+
+- Brainstorm trace citation (`/brainstorm` output, option-comparison evidence)
+- Investigation log citation (`/investigate` finding, `file:line` citation)
+- Source-of-evidence link (existing KB section, migration, or external doc)
+
+If a decision is recorded without a cited grounding artifact, flag it as **UNVERIFIED** (the decision may still be correct, but the trace is missing — write it in now or the next reviewer can't audit the reasoning).
+
+**Engineering-judgment exception.** Some decisions are pure technical choices — runtime layout, error-handling style, file naming — that have no external "artifact" to cite because the rationale *is* the technical reasoning. For these, the Reasoning column itself must make the technical justification visible. Don't flag a stated technical rationale as UNVERIFIED; flag *missing* rationale.
+
+Distinguishing rule: if the decision could only be answered by reading an external artifact (a KB, a brainstorm trace, a prior incident), require the citation. If the decision is justified by self-contained engineering reasoning, accept the Reasoning column as the citation.
+
+### 6d: Verdict
+
+**On PASS** (no UNRESOLVED items, every decision recorded with a cited evidence source): prepend a `> **Status: LOCKED YYYY-MM-DD**` blockquote header to the spec file (immediately under the H1 title, before any other content). Replace `YYYY-MM-DD` with today's date.
+
+**On FAIL** (one or more UNRESOLVED or UNVERIFIED items): output a numbered list of the unresolved items. Do **not** write the LOCKED header. Tell the user: "Spec failed lockdown check — [N] unresolved items below. Resolve and re-run Step 6."
+
+The LOCKED header is the convention that downstream `/orchestrate` (Phase 6) and `/implement` use to decide whether the spec is dispatch-ready. Drafts without the header are exploratory only.
+
 ## Important
 
 1. **Be thorough** — the whole point is to find what's missing BEFORE implementation

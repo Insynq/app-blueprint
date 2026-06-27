@@ -61,6 +61,15 @@
 [Empty — patterns emerge during development. Add here when established so all future sessions inherit them.]
 - Spec docs: Live in `/docs/` with `*-spec.md` naming (e.g., `docs/feature-name-spec.md`). Created by `/brainstorm` or `/unify` output, consumed by `/plan-review` and `/implement`.
 
+### Verification & safety disciplines (framework-provided)
+- **Spec lockdown convention:** a spec doc becomes implementable only once `/plan-review` Step 6 writes a `> **Status: LOCKED YYYY-MM-DD**` header. Drafts without it are exploratory only; `/orchestrate` Phase 6 and `/implement` use the header to decide whether to dispatch.
+- **Re-grounding + refutation of security-class audit findings:** every load-bearing security/RLS finding is re-derived against the **live SQL/policy this run** — never accepted on a spec's prose or a stale `file:line` citation — and an independent skeptic agent is spawned per security-class category to try to KILL it before the verdict. A Refutation Ledger supersedes the audit checkbox. Targets: `/audit-code`, `/audit-rls`, `/audit-infra`, `/audit-full`, and `/debug`'s three-strikes escape.
+- **Ground-first anchor:** `/debug` quotes the literal primary artifact (error text, failing test, failing RLS query, network response) verbatim before hypothesizing; entry points derive from what the artifact *shows*, not what the description *implies*.
+- **Smoke truth-gate:** a never-run / `Pending` / absent smoke in a diff's scope ships as `Unverified at ship: <id>` — never laundered into "Ship Complete" (`/ship` Step 3.5). A bare user "pass" is approval of code quality, not evidence of test execution.
+- **Deferred-smoke debt rollup:** `/ship` Step 3.6 surfaces the accumulated deferred prod-smoke count at every phase boundary; no smoke crosses a boundary without a logged per-smoke user grant (kills the self-authorized "authorized posture" ratchet).
+- **Service-boundary live-smoke gate:** any change touching auth / email→delivery / webhooks / external-API or payment round-trips needs a `live-required` end-to-end smoke before prod exposure — unit/typecheck/pgTAP green is explicitly **not** sufficient.
+- **Fail-loud-or-closed (reference):** the defensive-write rule lives in `docs/Obs KBs/OBS_KB_5_Defensive_Writes.md` (Primitive 0 — close the capability; Primitive 9 — fail loud or fail closed, never `catch → log → continue`). Reference KB, not an audit acceptance gate.
+
 ## Preferences
 [TODO — populate during /kickoff with working style and communication preferences]
 

@@ -110,12 +110,15 @@ If `docs/smoke-tests-pending.md` exists:
 
 1. Read it. Look for sections where every test is `Passed (YYYY-MM-DD)` — collapse those sections in this commit to a one-liner (e.g., `Phase 2 — all 5 tests passed 2026-05-15. See git history for detail.`). Don't batch this across releases; do it now.
 2. Check if the diff introduces behavior that needs new manual verification (UI flows, OAuth, payments, third-party webhooks, migrations, browser-specific bugs, race conditions). If so, propose new entries to add — assign stable IDs following the `<SECTION>-<NUMBER>` or `<SECTION>-<TYPE><NUMBER>` convention (do NOT reuse retired IDs) and tag each with a `Lane` per [smoke-tests-pending.md → Lanes](../../docs/smoke-tests-pending.md#lanes).
-3. If any test in the diff's scope is currently in `Failed` status, STOP and report — do not ship until the failing test is resolved or explicitly deferred.
+3. **Truth-in-world gate (not just `Failed`).** If any test in the diff's scope is currently in `Failed` status, STOP and report — do not ship until the failing test is resolved or explicitly deferred. Additionally, if any test in the diff's scope is **not** `Passed` (never-run, `Pending`, or absent), it is **not** truth-checked: the composed commit/changelog body (Step 5) MUST name it verbatim as `Unverified at ship: <id>` rather than asserting it as validated/working. A never-run smoke must surface as an unverified claim — it may never launder into a bare "Ship Complete." (This gate reads the literal catalog state, an external artifact — not an agent self-report, so it can't be rubber-stamped.)
 4. **Trace-verified-pending count.** Scan for tests with both `Trace verified: <date>` and `Status: Pending`. Today's date is the reference for TTL math.
    - **0–14 days since trace:** report count in the ship summary as informational. Eyeball debt is fresh.
    - **15–30 days since trace:** report as a **WARN**. Eyeball debt is aging — list the affected IDs explicitly so the user sees them.
    - **>30 days since trace:** STOP and report. Do not ship until either (a) eyeball pass is run and `Status` flipped to `Passed`, or (b) the user explicitly authorizes shipping with overdue trace-verified smokes (capture the authorization in the ship commit body).
 5. **Mention trace-deferred IDs in the ship commit body.** When the diff itself trace-verifies smokes (added the annotation in this batch), list the affected IDs in the commit body: "Shipping with `<ID>, <ID>, ...` trace-verified, eyeball pass deferred."
+6. **Reconciliation rule for `Unverified` smokes.** Shipping with an `Unverified at ship: <id>` is allowed *only* if (a) a follow-up phase is named that will clear it, or (b) it is explicitly deferred with an **owner + date**. Otherwise `smoke-tests-pending.md` accumulates `Pending` entries unbounded — record every such deferral in the **Deferred prod smokes** rollup (Step 3.6 / `smoke-tests-pending.md`) so the debt stays visible across phases.
+7. **Re-confirmation gate (a "pass" is not execution evidence).** A bare user "pass" / "looks good" is approval of *code quality*, not evidence of *test execution*. Do **not** flip a smoke `Pending → Passed` off an affirmation without a description of what was actually run (the steps exercised, the observed outcome). If no execution description is given, request one or keep the smoke `Unverified`.
+8. **`live-required` service-boundary gate (N2).** A **service-boundary flow** — auth, email/outbox→delivery, webhooks, external-API or payment round-trips — has failure modes unit/typecheck/pgTAP green *cannot* model (auth-hook side effects, link encoding across a mail provider, OAuth/PKCE token compatibility). Any diff touching one requires a **live end-to-end smoke before prod exposure**; tag that smoke `live-required`. The truth-gate treats a `live-required` smoke as **gating, not deferrable-by-default** — it cannot ship `Passed` on unit/typecheck/pgTAP alone. It must be run, or explicitly user-waived with a logged per-smoke grant (Step 3.6 / N1). `Installed, not yet proven in a live run.`
 
 If the file does not exist, skip this step (project hasn't adopted the catalog yet).
 
@@ -131,6 +134,16 @@ Prompt yourself across these buckets and file each signal where it already lives
 - **Tooling / automation to build next time** (the one signal with no existing home — usually a framework or workflow improvement) → `docs/PARKING_LOT.md` Open, as a dated entry tagged `framework-meta`.
 
 Keep it to signals that actually surfaced — an empty retro sweep is a valid outcome; don't manufacture lessons to fill buckets. "How the phase actually went" already lives in `phase-plan.md` (workflow Phase 10), so don't restate it here.
+
+### Deferred-smoke debt rollup + phase-boundary forcing function (N1)
+
+A phase boundary is also the moment to confront *cross-phase verification debt* — the smokes that keep getting deferred. Step 3.5's truth-gate hardens a *single* ship; nothing else stops `Unverified` smokes from accumulating silently across phases until a "we've been shipping fine" posture quietly authorizes itself. Do this every phase boundary:
+
+1. **Emit the rollup.** Read the **Deferred prod smokes** section of `docs/smoke-tests-pending.md` and surface the **accumulated count** of still-deferred prod smokes (with their owners + deferral dates + the ship each rode). This count goes in the ship summary, not buried.
+2. **Forbid the self-authorized "authorized posture."** Deferring a prod smoke *past a phase boundary* requires an **explicit, logged user grant per smoke** — not a pattern claimed from prior phases ("we shipped the last three this way"). No blanket posture clears the gate; each carried-over smoke needs its own logged grant.
+3. **Outcome over output.** Judge the phase by whether the **user's surface actually shrank**, weighting the concrete deferred-debt count over the count of artifacts shipped. A phase that shipped ten files but grew the deferred-smoke backlog did not reduce risk.
+
+`Installed, not yet proven in a live run.`
 
 ## Step 4: Stage Changes
 
@@ -151,6 +164,8 @@ git diff --cached --stat
 - Blank line.
 - **Body:** 1–3 short paragraphs distilling *what changed and why* — fold in quality gates run, smoke-test status, and any migration note. Drop meta-instructions aimed at the agent ("highest priority", "don't forget …").
 - **Never** emit template tokens (`$ARGUMENTS`, `.message`, `.phase`, `{{…}}`) into the message.
+
+> **Provenance discipline.** For every claim you carry forward from a worker/sub-agent self-report (smoke status, worker completion notes, the loose brief's quality-gate assertions), tag it `[verified: how]` or `[relayed: source-said]`; never harden a hedge ("appears to" stays "appears to," a grep-count stays a grep-count); re-read the source's own caveats and carry the strongest dissenting line forward so the commit's front-confidence never exceeds its back-caveats. The body may **not** assert more completion than the smoke catalog (Step 3.5) actually verified — carry any `Unverified at ship: <id>` line through **verbatim**, and never relabel a code-level read ("verified at code level") as an end-to-end pass.
 
 Then commit with both trailers:
 
