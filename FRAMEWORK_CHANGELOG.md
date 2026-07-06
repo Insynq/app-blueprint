@@ -54,6 +54,18 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.2.1] - 2026-07-05
+
+Fixes a manifest-completeness bug in the v0.2.0 release and adds a `/ship` gate so it can't recur. v0.2.0 added `docs/verification-discipline-adoption-spec.md` (an internal framework-development spec) but never enumerated it in `.framework-manifest.json` — and docs/ root files require explicit enumeration — so `/update-framework` couldn't categorize the file and mishandled the per-file merge for adopters. Surfaced by a downstream adopter's dry-run.
+
+### Fixed
+
+- `.framework-manifest.json`: enumerate `docs/verification-discipline-adoption-spec.md` under `excluded` — an internal spec that never ships to adopters, same treatment as `docs/AUDIT_FINDINGS.md`. The manifest now accounts for all 136 tracked files (verified: zero uncovered).
+
+### Added
+
+- `.claude/commands/ship.md`: **Step 4.5 — manifest completeness gate** (canonical repo only; auto-skips in adopter projects). Before committing a framework ship, it verifies every tracked file is covered by a manifest rule (exact entry or directory rule) and STOPS the ship with the list of uncovered files if not. Prevents the exact class of bug that broke v0.2.0 — a new file, especially a `docs/` root file, that never got manifest-enumerated.
+
 ## [0.2.0] - 2026-06-26
 
 Reverse sister-framework adoption: ports agent-blueprint's verification & safety-discipline layer (its v0.4.0–v0.5.1 work) into app-blueprint, reframed for web apps. The change-set was field-validated against 12 real downstream transcripts (9 eXp Onboarding + 3 Kai-App), which **inverted** the original draft's priorities — so the additions are ordered by what the field actually proved. Spec: `docs/verification-discipline-adoption-spec.md` (LOCKED 2026-06-26).

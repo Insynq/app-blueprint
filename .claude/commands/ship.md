@@ -157,6 +157,35 @@ Review what's staged:
 git diff --cached --stat
 ```
 
+## Step 4.5: Manifest completeness gate (canonical repo ONLY — auto-skips in adopter projects)
+
+Prevents shipping a release whose `.framework-manifest.json` doesn't account for every tracked file — the failure mode where a newly-added `docs/` root file (or any new path) is missing from the manifest, so `/update-framework` can't categorize it and mishandles the per-file merge for adopters.
+
+**Guard — if this does not print `CANONICAL`, SKIP this step** (adopter projects don't ship the manifest):
+```bash
+if [ -f FRAMEWORK_CHANGELOG.md ] && [ -f bin/init.js ]; then echo "CANONICAL"; else echo "ADOPTER — skip Step 4.5"; fi
+```
+
+If `CANONICAL`, verify every tracked file is covered by a manifest rule — an exact file entry, or a directory entry ending in `/`:
+```bash
+node -e '
+const fs=require("fs"),cp=require("child_process");
+const m=JSON.parse(fs.readFileSync(".framework-manifest.json","utf8"));
+const rules=[].concat(...Object.values(m.categories));
+const dirs=rules.filter(r=>r.endsWith("/"));
+const files=new Set(rules.filter(r=>!r.endsWith("/")));
+const tracked=cp.execSync("git ls-files",{encoding:"utf8"}).trim().split("\n").filter(Boolean);
+const covered=f=>files.has(f)||dirs.some(d=>f.startsWith(d));
+const bad=tracked.filter(f=>!covered(f));
+if(bad.length){console.error("✗ MANIFEST INCOMPLETE — "+bad.length+" uncovered file(s):\n"+bad.map(x=>"  "+x).join("\n"));process.exit(1);}
+console.log("✓ manifest complete: all "+tracked.length+" tracked files covered");
+'
+```
+
+- **`✓ manifest complete`** → proceed to commit.
+- **`✗ MANIFEST INCOMPLETE`** → STOP. Do not commit or publish. For each uncovered file, add it to the right `categories` list in `.framework-manifest.json` — `framework-managed` (framework owns it), `hybrid` (adopters fill it in), `project-owned` (adopters own it), or `excluded` (never ships — e.g. internal specs/audits) — then re-run `/ship`. Remember: `docs/` root files must be enumerated explicitly (no directory rule applies to them).
+- If `node` is unavailable, report "manifest gate skipped: node not found" and continue — don't block a ship on missing tooling.
+
 ## Step 5: Commit
 
 **Compose** a clean commit message from the ship summary — do not paste the summary verbatim:
