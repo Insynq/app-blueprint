@@ -316,6 +316,8 @@ curl -sS -H "Accept: application/vnd.github+json" \
 
 **Branch note:** the release is cut at the commit you just shipped — which, if the gated Step 6.5 merge ran, is now the merge commit on `main`. For framework ships the released commit should be on `main` so the default branch never drifts behind the published release; if you shipped from a feature branch and skipped Step 6.5, flag in the final output that `main` may need the merge.
 
+**npm note (fresh-install path):** publishing the GitHub release does NOT publish to npm. The `npx` installer (`bin/init.js`) fetches its framework tarball from the git tag matching its *own* `package.json` version, so npm's `latest` must always have a matching git tag — otherwise a fresh `npx @insynq/app-blueprint` 404s on a nonexistent tag (this is exactly how npm's `0.1.4` latest broke: `v0.1.4` was never tagged). After a release, run `npm publish` (needs interactive npm auth — cannot be auto-run here) so the installer version keeps pace with the tags. Flag in the final output that npm still needs a manual `npm publish`.
+
 ## Step 7: Final Output
 
 ```markdown

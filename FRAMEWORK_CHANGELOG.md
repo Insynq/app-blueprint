@@ -54,6 +54,14 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.2.11] - 2026-07-06
+
+Adds an npm-publish reminder to `/ship` so the installer distribution can't silently fall behind the git tags again. (Version jumps 0.2.1 → 0.2.11 intentionally.) The `npx` installer (`bin/init.js`) fetches the framework tarball from the git tag matching its *own* `package.json` version, so every release needs a matching `npm publish` or a fresh `npx @insynq/app-blueprint` 404s on a nonexistent tag — exactly why npm's `0.1.4` latest was broken (`v0.1.4` was committed but never tagged). Installer code itself is unchanged; the fix for consumers is a one-time `npm publish` at a tagged version.
+
+### Added
+
+- `.claude/commands/ship.md` Step 6.6: an **npm note** documenting the installer's version↔git-tag coupling and reminding the maintainer to run `npm publish` after each release (not auto-run — npm auth is interactive — but no longer silently forgettable). The release step also flags in its final output that npm still needs a manual publish.
+
 ## [0.2.1] - 2026-07-05
 
 Fixes a manifest-completeness bug in the v0.2.0 release and adds a `/ship` gate so it can't recur. v0.2.0 added `docs/verification-discipline-adoption-spec.md` (an internal framework-development spec) but never enumerated it in `.framework-manifest.json` — and docs/ root files require explicit enumeration — so `/update-framework` couldn't categorize the file and mishandled the per-file merge for adopters. Surfaced by a downstream adopter's dry-run.

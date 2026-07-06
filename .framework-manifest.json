@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": "1",
-  "version": "0.2.1",
+  "version": "0.2.11",
   "name": "app-blueprint",
   "canonical_url": "https://github.com/Insynq/app-blueprint",
   "github_owner": "Insynq",
