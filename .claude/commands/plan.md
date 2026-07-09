@@ -51,6 +51,7 @@ All recommendations must fit the existing project. Don't introduce patterns that
 - Are there existing patterns to follow?
 - What constraints apply?
 - **Earned vs. assumed scope-out:** For every "out of scope," "existing behavior preserved," or "verifiable later" assumption, classify it. Earned = "I confirmed X works." Assumed = "I couldn't confirm X — building anyway." Mark every assumed scope-out as a dependency that must be verified before or during implementation. See `docs/LESSONS.md` `[PROCESS-1]`.
+- **Provenance of superseded work:** If this plan replaces or is inspired by prior work — an open or abandoned PR, a stale branch, or an existing implementation already in the codebase (e.g. an item routed here from `/triage`) — link every inspiring artifact and locate where the current code lives *before* proposing the replacement. This is distinct from the reuse search in Step 2: reuse finds code to build on; provenance names and reads the specific artifact this plan supersedes, so you don't re-litigate solved decisions or lose working edge-case handling. Don't design a rewrite in a vacuum when the code it replaces already ships.
 
 ### 2. Identify Affected Areas
 Search the codebase for:

@@ -567,6 +567,8 @@ pgaudit is appropriate for forensics after a breach ("what SQL was run"). It is 
 
 **ALWAYS write the audit row inside the same transaction as the state change** (DB function approach, SB_KB_6 pattern). An audit row written before the commit ensures the record exists even if the caller crashes or the network drops between steps.
 
+**ALWAYS let audit timestamps default to `now()` at the DB; NEVER insert `occurred_at` (or `executed_at` / `approved_at` / `resolved_at`) from an app-supplied value or a hand-typed literal.** A literal parses fine and silently inverts event ordering across timezones — the DB clock is the single source. (This governs the `audit_log` table; business-table status columns are covered by the `gen-migration` "What to Check For" timestamp rule, which spans all tables. Installed 2026-07-07, not yet proven in a live run in this framework's projects.)
+
 **ALWAYS use UUIDs in audit payloads.** Literal emails and display names survive anonymization and cannot be erased. UUIDs resolve to `[deleted]` after the profiles row is anonymized. (AUTH_KB_6.)
 
 **NEVER expose audit rows to end users.** No RLS SELECT policy for `authenticated` without the security role check. If users need a "recent activity" feed, build a separate, purpose-limited `user_activity_log` table.

@@ -455,6 +455,8 @@ const model = (() => {
 
 Sonnet 4.6 is the right default. Opus is 5x the cost per input token — do not default to it because it "feels safer."
 
+**Cost gates exploration, not what ships.** The guidance above is one-directional — it guards against over-spending. The complementary guard: output the end user reads directly (generated copy, user-facing UX text, high-stakes analysis) is judged on output *quality*, not price. Escalate to the top tier when the cheaper model misses the bar — that costs less than shipping mediocre user-facing output. The decision heuristic above is a starting default, not a fixed ceiling: a feature may route a given call to a stronger model, at design time or via a judge-then-retry loop, when the output doesn't clear the bar. `Installed 2026-07-07, not yet proven in a live run.`
+
 **Knowledge cutoffs (verified 2026-05-04):** Opus 4.7 = January 2026, Sonnet 4.6 = August 2025, Haiku 4.5 = February 2025.
 
 **Deprecated — migrate away:** `claude-sonnet-4-20250514` and `claude-opus-4-20250514` retire June 15, 2026.
@@ -907,6 +909,7 @@ Creating `new Anthropic()` inside a per-request handler is harmless but wasteful
 
 - Cache long system prompts — if your system prompt exceeds the model's threshold, add `cache_control: { type: "ephemeral" }` to the stable block. No exception.
 - Pick the smallest sufficient model: Haiku for fast/cheap tasks, Sonnet as default, Opus only for hard reasoning or agentic work.
+- Escalate to the top tier when the cheaper model misses the bar for output the user reads directly (generated copy, UX text, high-stakes analysis) — judge it on output quality, not price; escalating costs less than shipping mediocre user-facing output. (Installed 2026-07-07, not yet proven in a live run in this framework's projects.)
 - Run all Anthropic API calls server-side — Server Action, Route Handler, or background job. Never from client components.
 - Log `response.usage` on every request (input, output, cache_write, cache_read, latency).
 - Include `_request_id` in every error log.

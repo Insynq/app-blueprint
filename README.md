@@ -97,6 +97,7 @@ Worker plan docs are single living artifacts that PM and worker both write to â€
 | `/investigate` | Deep codebase exploration â€” trace data flows, find all usages |
 | `/plan` | Create implementation plan from investigation findings |
 | `/plan-review` | Gap analysis on a spec doc before implementing |
+| `/triage` | Sort a stale backlog (PRs/branches/work items) into action buckets with judge-verified verdicts and a fail-loud coverage tally |
 
 ### Implementation
 | Command | Purpose |

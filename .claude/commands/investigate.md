@@ -122,6 +122,8 @@ Before recommending new code:
 
 ### Recommended Fix/Approach
 [Specific change needed — file and line if known]
+### If Nothing Was Found (empty-result close-out — required when true)
+If this investigation legitimately finds nothing — no root cause, no matching usages, or the reported behavior is not actually a bug — say so **explicitly** and name the exact target inspected (files, globs, routes, and symbols searched). Do not return a thin summary: a silent empty return reads to the caller as an incomplete run and triggers a wasteful re-investigation. (This is the investigate-side twin of `/audit-code`'s blind-spot-honesty rule.)
 ```
 
 ## Red Flags to Report
@@ -140,3 +142,4 @@ Before recommending new code:
 
 1. Root cause identified → run `/plan` for implementation planning
 2. Need more context → ask user or run again with narrower focus
+3. Legitimately found nothing (no root cause, no matching usages, or not actually a bug) → report that explicitly and name the exact target inspected — never return a thin/silent summary that reads as an incomplete run

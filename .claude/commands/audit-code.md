@@ -250,6 +250,15 @@ Each refuter returns, per finding, **CONFIRMED** (tried and failed to kill it �
 
 **Cost escape-hatch (BLOCKER).** If the load-bearing set spans more than ~3–4 distinct security-class categories, do **not** spawn unbounded refuters — **halt and escalate the audit itself** to the user ("this change has a security-class surface too broad to refute cheaply — it needs a scoped re-audit / redesign"). An audit that can't be refuted cheaply is itself the finding.
 
+**Split-verdict escalation.** When a load-bearing finding accumulates multiple independent verdicts
+(a re-run, a judge panel, or a multi-refuter configuration) that **disagree**, the split is a
+*positive* escalation trigger — route the contested finding to the user with both positions quoted;
+do not average it away. And unanimity earns nothing: never promote an all-agree result to "verified
+clean," because refuters sharing the same seed error (the same wrong assumption about the schema,
+the same missed policy) produce worthless consensus — agreement between correlated verifiers is not
+independent confirmation. (Today's default runs one refuter per category, so a split arises only when
+extra verdicts are deliberately gathered; this clause does not by itself mandate multi-refuter spend.)
+
 **Mechanical tally** (so a bad ledger can't be laundered into a pass):
 - Treat the result as `APPROVED` only if **every** load-bearing finding came back `REFUTED`. Any `CONFIRMED` or `OVERSTATED`-still-High → `NEEDS CHANGES`. A finding leaves the must-fix list only if its refuter graded it `REFUTED` with cited contradicting evidence.
 - **Blind-spot honesty:** if the load-bearing set was empty, state verbatim — *"Refutation pass: no-op — no load-bearing findings surfaced. A clean verdict here means the audit found nothing, NOT that an independent skeptic verified the code is clean."* Refutation tests findings that exist; it cannot surface one the auditor missed.

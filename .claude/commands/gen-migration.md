@@ -65,7 +65,8 @@ Write a complete migration file that includes:
 - **Recursion risk** — if a policy subqueries another RLS-protected table, use a SECURITY DEFINER helper
 - **Search path safety** — all SECURITY DEFINER functions must include `SET search_path = public`
 - **Column names** — use the project's established naming convention (snake_case, etc.)
-- **Timestamps** — include `created_at` / `updated_at` where appropriate
+- **Timestamps** — include `created_at` / `updated_at` where appropriate. Audit and status-change timestamp columns (`occurred_at`, `executed_at`, `approved_at`, `resolved_at`, status-change times) must carry `DEFAULT now()` at the DB (or be set by trigger) — never a hand-typed literal or an app-supplied `new Date().toISOString()` from a seed, migration, or backfill. The runtime clock is not the DB clock; a literal parses fine and silently inverts event ordering across timezones. (Ordinary `created_at`/`updated_at DEFAULT now()` is already the house style — this rule targets ordering-sensitive audit/status columns.)
+- **Inert defaults on attribution/financial columns** — no business-meaning `DEFAULT` or `COALESCE` fallback on `split_pct`, `credit_pct`, `owner_id`-style attribution columns. An omitted value must be visibly `NULL` (or `0`/`'unknown'`), never silently stamped with a business rule; a real value must be supplied. A business-value `DEFAULT` also defeats a not-null CHECK on the same column by auto-filling omitted writes — audit the write-side `DEFAULT` and any read-side view `COALESCE` together. (See SB_KB_3 Anti-patterns.)
 
 ### Output
 

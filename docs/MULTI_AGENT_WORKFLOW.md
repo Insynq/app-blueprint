@@ -24,6 +24,11 @@ Three roles, one human:
 
 PM can dispatch a worker two ways. Both modes use the same worker plan doc — the doc is the durable artifact regardless of where the work runs.
 
+When a phase runs workers on **different models** (e.g. an Opus PM dispatching Sonnet workers), note
+the producing model on each worker artifact so provenance and cost are visible at a glance. Optional
+and conditional — skip it on the common single-model phase; do not add a standing model field to the
+worker-doc header skeleton. `Installed 2026-07-07, not yet proven in a live run.`
+
 ### Subagent dispatch (default)
 
 PM spawns the worker as a subagent via the Agent tool. The subagent runs to completion in its own ephemeral context, reads/writes the plan doc as a normal file, and returns a single summary message. PM reads the plan doc to see the full report.
@@ -140,6 +145,7 @@ Each worker (subagent or separate-window):
 
 - PM analyzes all worker audit reports against its holistic audit.
 - PM brainstorms gaps — what did the workers see that the holistic view missed? What did the holistic view see that workers can't?
+- When independent workers or verifiers disagree on the same finding, the split is a positive escalation trigger — resolve it at the PM/human layer with both positions quoted; never average it away, and never treat unanimity among correlated reviewers as independent confirmation. `Installed 2026-07-07, not yet proven in a live run.`
 - For each worker plan doc, PM **edits the doc directly** with annotations: key decisions, reasoning, scope adjustments, integration constraints. The annotation lives at the top of the relevant section, prefixed `**PM annotation:**`.
 - For each worker, PM picks the implementation [dispatch mode](#dispatch-modes): subagent if the spec is clear and self-contained, separate-window if iterative debugging or live steering is expected.
 
@@ -189,6 +195,19 @@ Each worker (subagent or separate-window):
 > trace **expecting errors in both directions**: the worker may report working wiring that's broken, and a
 > trace can flag correct wiring as suspect. The point isn't to confirm the summary; it's to find where it's
 > wrong. This is the existing trace-verifier doing its job — don't build a parallel "verify the synthesis" step.
+
+**Risk-targeted verification.** After the fresh-evidence gate passes, diff the deployed baseline
+against the integrated candidate (`git diff <deployed-baseline>..HEAD --stat`) and treat the changed
+surface as the **risk map** — the same blast radius already computed in Phase 3 (sequencing /
+collisions / blast radius / worker shape). Dispatch trace-verifiers and smokes at the highest-delta,
+highest-blast-radius files first, and re-exercise the **OLD** behaviors adjacent to the change (the
+regression surface: shared components, shared query hooks, dependent Supabase policies/queries), not
+only the new feature — `SCOPE.md`'s "Adjacent features … still work after the change" belongs here as
+an operative Phase-8 step, not just a Definition-of-Done example. A clean verification is an
+honestly-clean result, not proof of under-testing (the same honest-clean epistemic as the A3 smoke
+truth-gate / `verification-discipline-adoption-spec.md` §3, and the audit-code blind-spot-honesty
+clause). `Installed 2026-07-07, not yet proven in a live run` — the regression-surface half is
+field-recognized (`AUDIT_FINDINGS.md` L5), the diff-as-risk-map targeting is not yet fired.
 
 ### Phase 9: Smoke tests
 

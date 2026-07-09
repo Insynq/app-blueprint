@@ -127,6 +127,23 @@ Conventions in this framework:
 - Cross-reference sibling commands and KBs by name (`/plan-review`, `docs/MULTI_AGENT_WORKFLOW.md`).
   **Do not `@`-link files** — `@path` force-loads the entire file into context every time the
   command loads. Reference the path as text and let the agent open it on demand.
+- **Empty-result contract.** If a command's work can legitimately find *nothing* (a review with no
+  findings, an investigation with no root cause, a search with no matches), it MUST say so explicitly
+  and name the exact target it inspected (files/globs/routes/branch) rather than returning a thin or
+  silent summary — a silent empty return reads to the caller as an incomplete run and triggers a
+  wasteful re-invocation. The audit commands already carry this as blind-spot honesty
+  (`/audit-code` → "Refutation Pass"); it generalizes to every review/audit/investigate-shaped
+  command. (`Installed 2026-07-07, not yet proven in a live run.`)
+- **Never embed a snapshot of a canonical file inside a command body.** If a command needs to
+  produce or modify a file the repo already owns the shape of (`CLAUDE.md`, a KB skeleton, a
+  manifest), instruct the agent to **edit the checked-in file in place** — never paste a copy of it
+  into the command as a template to regenerate from. An embedded copy is a second source of truth
+  that silently drifts: framework releases update the canonical file but not the snapshot, and the
+  next run of the command overwrites the new sections with the stale copy. Real incident
+  (2026-07-09): `/kickoff` carried an embedded `CLAUDE.md` template that predated two releases of
+  framework sections — a fresh-clone kickoff would have wiped the Reference Documents index, the
+  verification-disciplines block, and the current command table. Judge-caught; fixed by switching
+  kickoff to fill-in-place edits.
 
 ---
 

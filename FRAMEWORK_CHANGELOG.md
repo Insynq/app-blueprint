@@ -54,6 +54,47 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.3.0] - 2026-07-09
+
+Second agent→app sister-framework port: the **agent-blueprint v0.6 intake** — 13 ADOPT items applied as 25 edit blocks across 16 files (incl. the new `/triage` command), 7 items parked with explicit promotion triggers, spec at `docs/agent-blueprint-v06-intake-spec.md` (LOCKED 2026-07-07, internal — excluded from adopter installs). Application: 16 workers, each independently validated (16/16 pass, zero fix rounds), then stress-tested by a 6-judge mixed Opus 4.8 + Fable 5 panel whose 6 findings (1 blocking, 1 major, 4 minor) were all fixed before this release `[relayed from the intake workflow run]`. Also ships the **kickoff CLAUDE.md fill-in-place refactor**, closing a template-drift class the judge panel caught.
+
+**Provenance discipline (per the spec's own convention):** every ported prose change ships flagged `Installed 2026-07-07, not yet proven in a live run` unless receiving-side field evidence is cited (A1's incident is downstream-incident-sourced). The kickoff fill-in-place refactor and the two intake gates are likewise **not yet proven in a live run** — no live verification is claimed for them.
+
+### Added
+
+- **`.claude/commands/triage.md` — new `/triage` command** (C-6). Backlog sorting fan-out: enumerate the item set and freeze its count N, dispatch one investigator per item, stress-test each verdict with an independent judge (reusing `/audit-code`'s Refutation Ledger mechanic), and reconcile a **fail-loud coverage tally** against N — a dropped item is reported `UNVERIFIED`, never silently lost. Produces action buckets (ready / needs-work / superseded / rewrite) and hands graduated items to `/plan`. Listed in the CLAUDE.md and README command tables. `Installed, not yet proven in a live run` (the coverage-tally discipline itself is field-attested downstream).
+- **Lane A — DB write-integrity:**
+  - `docs/Supabase Structure KBs/SB_KB_3` Anti-patterns: **business-meaning `DEFAULT` / `COALESCE` on financial-attribution columns** — the two-headed trap (write-side DEFAULT + read-side COALESCE each assert the rule independently) that silently defeats the file's own not-null CHECK; defaults on such columns must be inert (`NULL`/`0`/`'unknown'`). Incident-sourced: a `DEFAULT 75` + view `COALESCE(...,75)` put ~$97k of mis-credit at risk across 13 settlements downstream.
+  - `.claude/commands/gen-migration.md` "What to Check For": audit/status-change timestamps (`occurred_at`, `executed_at`, …) must carry `DEFAULT now()` at the DB — never an app-supplied value or literal (the runtime clock is not the DB clock); plus the inert-defaults rule above at migration-authoring time.
+  - `docs/Obs KBs/OBS_KB_3`: ALWAYS/NEVER rule — audit-log timestamps default to `now()` at the DB.
+- **Lane B — orchestration & verification:**
+  - `/audit-code` **split-verdict escalation**: disagreeing independent verdicts on a load-bearing finding are a positive escalation trigger (route to the user with both positions quoted, never average), and unanimity earns nothing — correlated verifiers' consensus is not independent confirmation. Mirrored in `docs/MULTI_AGENT_WORKFLOW.md` Phase 5.
+  - **Risk-targeted verification** in MAW Phase 8 + `/orchestrate` Phase 8: `git diff <deployed-baseline>..HEAD --stat` is the risk map — verify highest-delta/highest-blast-radius files first and re-exercise OLD behaviors adjacent to the change (the regression surface), not only the new feature; a clean result is honestly clean, not under-testing.
+  - MAW dispatch modes: optional **multi-model worker provenance** note — when a phase runs workers on different models, note the producing model on each worker artifact.
+- **Lane C — command hardening:**
+  - `/plan-review` Step 6 + CLAUDE.md: **LOCKED certifies dispatch-readiness, NOT deploy authorization** — deploy stays gated at `/ship` Step 3.5 and the `/db-push` remote-migration gate.
+  - `/plan`: **provenance of superseded work** — when a plan replaces prior work (a stale PR/branch/existing implementation, e.g. routed from `/triage`), link and read the specific superseded artifact before designing the replacement.
+  - `/investigate`: **empty-result close-out** — a legitimate "found nothing" must be explicit and name the exact target inspected; generalized in `docs/AUTHORING_COMMANDS.md` §5 as the **empty-result contract** for all review/audit/investigate-shaped commands.
+- **Lane D — routing, debug, glossary:**
+  - `docs/AI KBs/AI_KB_1`: **cost gates exploration, not what ships** — user-facing output is judged on quality, not price; escalate to the top tier when the cheaper model misses the bar (design-time or judge-then-retry).
+  - `/debug`: **disproportionate-fix signal** — a first-try fix that is disproportionate to its request-class (large diff, crossed layers, or suspiciously cheap while asserting an entity you didn't expect to exist) fires the same "the model of the problem is wrong" signal as three strikes; cost measured by diff size/files/layers, never wall-clock. New rationalization-table row + escape-hatch extension.
+  - `/kickoff` Phase 5: new **glossary question** (what "clean", "done", "production-ready", "good enough" mean to this user), flowing into the preferences file's new Glossary field and CLAUDE.md's Preferences glossary bullet — sharpens task instructions and audit acceptance.
+- **Lane E — CLAUDE.md conduct rule:** **scope graduation is separate authorization from design sign-off** — a design-only brief is not upgraded to build+deploy authority by the user answering design questions; before the first prod-mutating action, ask one explicit line and wait, and beware ratifying your own presupposition. Same failure family as the deferred-smoke "authorized posture" ratchet.
+- **`docs/PARKING_LOT.md`: 7 parked items** with explicit promotion triggers and panel evidence — debug "cannot reproduce" verify-by-attempt bar, investigate "no usages" indirect-reference bar, autonomy-budget doctrine, effort-disproportion LESSONS entry + its two coupled consumers (audit-code §4, MAW Phase 8 diff-vs-plan), and durable-docs-hold-query-paths-not-copies.
+- `docs/AUTHORING_COMMANDS.md` §5: **never embed a snapshot of a canonical file inside a command body** — edit the checked-in file in place. Retro lesson from the kickoff incident below.
+
+### Changed
+
+- **`/kickoff` CLAUDE.md fill-in-place refactor.** Removed the ~90-line embedded `CLAUDE.md` template from `kickoff.md`; kickoff now **edits the canonical checked-in `CLAUDE.md` skeleton in place** — fills the `[TODO]` markers from discovery, leaves framework-owned sections (`## Reference Documents`, the verification-disciplines Patterns block, `## Custom Commands`, `## KB Maintenance`) untouched, never touches preflight's `## Environment`, and self-verifies after editing (no framework section changed, no stray `[TODO]`s). Closes the template-drift class: the embedded snapshot predated two releases of framework sections, so a fresh-clone kickoff would have silently wiped the Reference Documents index, the verification-disciplines block, and the current command table. Judge-caught. `Not yet proven in a live run` — no fresh-clone `/kickoff` has exercised the new path.
+- `CLAUDE.md`: lockdown bullet gains the LOCKED-≠-deploy clarification; Preferences gains the glossary `[TODO]` bullet; command table gains `/triage`. `README.md`: command table gains `/triage`.
+- `.framework-manifest.json`: `docs/agent-blueprint-v06-intake-spec.md` enumerated under `excluded` (internal spec, never ships to adopters — the Step 4.5 gate class from v0.2.1, caught at PM review this time).
+
+### Migration Notes
+
+- **`CLAUDE.md` is hybrid (sibling on update):** the scope-graduation bullet, LOCKED clarification, glossary bullet, and `/triage` row arrive as `CLAUDE.md.framework` — merge by hand.
+- **`docs/PARKING_LOT.md` is project-owned (skip on update):** existing adopters will NOT receive the 7 parked framework-meta entries; they're framework-development bookkeeping and are not needed downstream.
+- All ported disciplines ship `Installed 2026-07-07, not yet proven in a live run` — the first downstream run that exercises `/triage`, the fill-in-place kickoff, the split-verdict escalation, or the disproportionate-fix signal is calibration data; capture how it behaved.
+
 ## [0.2.11] - 2026-07-06
 
 Adds an npm-publish reminder to `/ship` so the installer distribution can't silently fall behind the git tags again. (Version jumps 0.2.1 → 0.2.11 intentionally.) The `npx` installer (`bin/init.js`) fetches the framework tarball from the git tag matching its *own* `package.json` version, so every release needs a matching `npm publish` or a fresh `npx @insynq/app-blueprint` 404s on a nonexistent tag — exactly why npm's `0.1.4` latest was broken (`v0.1.4` was committed but never tagged). Installer code itself is unchanged; the fix for consumers is a one-time `npm publish` at a tagged version.

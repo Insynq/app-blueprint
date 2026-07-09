@@ -239,6 +239,7 @@ Once all workers have reported implementation done:
 
 - Read the Implementation log + Completion notes from each worker doc.
 - Verify the integrated result against `phase-plan.md`: gaps, edge cases, integration points.
+- **Risk-targeted verification:** `git diff <deployed-baseline>..HEAD --stat` is the risk map — verify the highest-delta / highest-blast-radius files first, and re-exercise OLD behaviors adjacent to the change (regression surface), not only the new feature. A clean result is honestly clean, not under-testing. See [MULTI_AGENT_WORKFLOW.md → Phase 8](../../docs/MULTI_AGENT_WORKFLOW.md#phase-8-pm-verification--integration).
 - For gaps the PM can fill directly (it has full context), do the work in the PM context. Don't spin up another worker for small integration fixes.
 - Manage commit hygiene — coalesce related commits, split unrelated ones.
 - Update `phase-plan.md` with progress.

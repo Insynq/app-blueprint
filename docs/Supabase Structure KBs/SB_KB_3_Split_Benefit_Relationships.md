@@ -53,6 +53,25 @@ No FK enforcement possible. Type strings drift. RLS can't join cleanly. GitLab's
 **Computing financial splits inside RLS**
 RLS is for row visibility, not money. Financial calculations in USING clauses slow every query on that table. Move financial logic to application layer or a separate ledger table.
 
+**Business-meaning `DEFAULT` / `COALESCE` on a financial-attribution column**
+```sql
+-- Don't do this
+split_pct  numeric(5,2)  DEFAULT 75,          -- write-side head
+-- ...and in a view/RPC:
+select COALESCE(split_pct, 75) as split_pct   -- read-side head
+```
+A `DEFAULT` (or a view `COALESCE`) set to a *business value* silently stamps that rule on every row
+whose writer omitted the field — and it **defeats the not-null CHECK in the Generic example below** (`split_pct is not null`
+on the financial branch): the omitted write still passes the CHECK because the DEFAULT auto-fills it,
+so the guard that looks protective is inert. This is a **two-headed trap** — the write-side `DEFAULT`
+and the read-side `COALESCE` each assert the rule independently, so fixing one head leaves the other
+live. Fix: defaults and `COALESCE` fallbacks on financial/attribution columns must be **inert**
+(`NULL` / `0` / `'unknown'`) so an omission is visible and a real value must be supplied — and audit
+both heads together. (One instance of a general rule; see `gen-migration.md` "What to Check For".
+Field-attestation is downstream-incident-sourced: a `parsons_split_pct DEFAULT 75` + view
+`COALESCE(..., 75)` put ~$97k of mis-credit at risk across 13 settlements before both heads were
+dropped. Installed 2026-07-07, not yet proven in a live run in this framework's projects.)
+
 ---
 
 ## Generic example

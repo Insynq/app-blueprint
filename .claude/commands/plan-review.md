@@ -201,7 +201,7 @@ Distinguishing rule: if the decision could only be answered by reading an extern
 
 **On FAIL** (one or more UNRESOLVED or UNVERIFIED items): output a numbered list of the unresolved items. Do **not** write the LOCKED header. Tell the user: "Spec failed lockdown check — [N] unresolved items below. Resolve and re-run Step 6."
 
-The LOCKED header is the convention that downstream `/orchestrate` (Phase 6) and `/implement` use to decide whether the spec is dispatch-ready. Drafts without the header are exploratory only.
+The LOCKED header is the convention that downstream `/orchestrate` (Phase 6) and `/implement` use to decide whether the spec is dispatch-ready. Drafts without the header are exploratory only. LOCKED certifies design **completeness and dispatch-readiness — NOT user authorization to deploy.** A LOCKED spec is clear to dispatch into implementation; it is not a green light to push migrations or promote to prod. Deploy stays gated downstream at `/ship`'s smoke truth-gate (Step 3.5) and the `/db-push` remote-migration gate — and `/implement` recommends `/db-push` immediately after batches succeed, so LOCKED must never be read as migration-push authorization.
 
 ## Important
 

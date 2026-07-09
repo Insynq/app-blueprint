@@ -279,6 +279,8 @@ Ask in sequence:
 
 5. "What should Claude always ask you before doing? For example: 'ask before any schema change', 'ask before deleting anything', 'ask before touching auth.' Or nothing — full autonomy is fine too."
 
+6. "Any evaluative words you use a lot that you'd want defined so Claude reads them the way you mean them? For example, what 'clean', 'done', 'polished', 'production-ready', 'accessible', or 'good enough' means to you. These sharpen task instructions and audit acceptance — how `/audit-code` and `/audit-rls` judge whether something is 'done.'"
+
 **Phase 5 close:** Summarize preferences. Confirm before writing files.
 
 ---
@@ -297,7 +299,7 @@ Wait for confirmation. Revise if needed before proceeding.
 
 ### Step 2: Write all files
 
-After confirmation, write every file below.
+After confirmation, write every file below. (Exception: `CLAUDE.md` is edited in place per its subsection — never rewritten from scratch.)
 
 ---
 
@@ -363,97 +365,26 @@ After confirmation, write every file below.
 
 #### `CLAUDE.md`
 
-**Before writing:** Read the existing `CLAUDE.md`. If it contains an `## Environment` section with real values (populated by `/preflight`), copy those exact lines and place them in the new file directly under `# Project: [App Name]`, above `## Overview`. Do not overwrite or regenerate the Environment block — it belongs to preflight, not kickoff.
+**Edit the existing file in place — never regenerate it from a template.** The checked-in `CLAUDE.md` *is* the canonical framework skeleton: the framework-owned sections (`## Reference Documents`, the `## Patterns` "Verification & safety disciplines" subsection, `## Custom Commands`, `## KB Maintenance`) are maintained by framework releases, and rewriting the file from any snapshot silently deletes whatever shipped since that snapshot was taken. Kickoff's job here is only to fill in the `[TODO]` markers from the discovery session, using targeted edits.
 
-Populate the rest of this structure with the project's specifics from the discovery session:
+Apply these edits, preserving everything not listed verbatim:
 
-```markdown
-# Project: [App Name]
+1. **Title + onboarding scaffolding** — replace `# Project: [TODO — run /kickoff to populate this]` with `# Project: <App Name>`, and delete the top-of-file `⚠️ This file is unpopulated…` warning blockquote (it no longer applies once kickoff completes).
+2. **`## Environment`** — do not touch. It belongs to `/preflight`; if it still reads `[TODO]`, tell the user to run `/preflight` rather than filling it yourself.
+3. **`## Overview`** — 1–2 sentences: what this app does and for whom.
+4. **`## Tech Stack`** — bullets: frontend framework + key libraries, backend/database, auth, hosting, other services (payments, email, storage, etc.).
+5. **`## Build Commands`** — replace the bracketed examples with the project's real commands.
+6. **`## Roles`** — user types and hierarchy if role-based permissions apply; otherwise write "Single user type."
+7. **`## Core Entities`** — the main domain concepts the app manages (not table names yet), e.g. `- **Orders** — represent a customer purchase request`.
+8. **`## Current Phase`** — replace the `[TODO]` with `Phase 1 — <name from discovery> (Not Started)`.
+9. **`## Preferences`** — fill from Phase 5: response style, autonomy level, things to avoid. Fill the Glossary bullet's trailing `[TODO — populate during /kickoff]` from Phase 5 Q6, keeping the bullet's framework-provided lead-in text intact.
+10. **Framework-owned sections** — `## Reference Documents`, `## Patterns` (including its "Verification & safety disciplines" subsection), `## Custom Commands`, `## KB Maintenance`, and `## DO NOT` stay exactly as they are. `## Patterns` and `## DO NOT` legitimately start near-empty; do not populate them during kickoff.
+11. **Footer** — if not already present, append at the end of the file:
 
-[Preserved `## Environment` block from preflight goes here, if present]
+    `---`
+    `*Built with [Insynq's Framework](https://github.com/Insynq/claude-app-blueprint) — a methodology-first project template for building applications with AI coding agents. Learn more at [insynqk.com](https://insynqk.com).*`
 
-## Overview
-[1–2 sentences: what this app does and for whom]
-
-## Tech Stack
-- [Frontend framework + key libraries]
-- [Backend / database]
-- [Auth]
-- [Hosting]
-- [Other services: payments, email, storage, etc.]
-
-## Build Commands
-- Type check: [e.g., npx tsc --noEmit]
-- Dev server: [e.g., npm run dev]
-- Build: [e.g., npm run build]
-
-## Roles
-[List user types and their hierarchy, if role-based permissions apply. Skip if single user type.]
-
-## Core Entities
-[List the main concepts the app manages — not table names yet, just domain concepts]
-Examples:
-- **Orders** — represent a customer purchase request
-- **Vendors** — service providers who fulfill orders
-
-## Reference Documents
-
-**Project state** (populated during development) — see `/docs` folder:
-- `APP_CONCEPT.md`: Problem statement, users, use cases, success criteria
-- `SCOPE.md`: V1 scope, out-of-scope, known unknowns
-- `KB_1_Architecture.md`: Architecture decisions and data model
-- `KB_7_UI_Patterns.md`: UI patterns and component conventions
-- `KB_8_Current_State.md`: Current phase and active tracking
-- `smoke-tests-pending.md`: **Single source of truth** for outstanding manual smoke tests with stable IDs. When asked about ship-readiness or "what's left to verify," point here — do not re-list tests in commits, PRs, or chat.
-- `MULTI_AGENT_WORKFLOW.md`: Optional methodology — PM + worker context-window pattern for multi-threaded work where the user stays in the strategic seat.
-
-**Stack reference KBs** (vetted patterns — consult the index, then read only the relevant KB):
-- `docs/Supabase Structure KBs/SB_KB_00_Index.md` — consult for any DB schema, RLS, multi-tenant, storage, realtime, or transactional-email work.
-- `docs/UI-UX KBs/UI_KB_0_Index.md` — consult for any frontend, component, layout, motion, or accessibility work.
-- `docs/Auth KBs/AUTH_KB_00_Index.md` — consult for login methods, custom JWT claims, MFA, session lifecycle, signup provisioning, or account management.
-- `docs/Job KBs/JOB_KB_00_Index.md` — consult for outbox processing, scheduled jobs (pg_cron / Vercel Cron), queue tables, or long-running tasks (Trigger.dev / Inngest).
-- `docs/Test KBs/TEST_KB_00_Index.md` — consult for test strategy, RLS testing with pgTAP, JS integration tests, component tests with MSW, Playwright E2E, or testing async patterns (Realtime, outbox, scheduled jobs).
-- `docs/Form KBs/FORM_KB_00_Index.md` — consult for any form, validation schema, wizard, or input-handling work.
-- `docs/Obs KBs/OBS_KB_00_Index.md` — consult for structured logging, error tracking, audit logs, performance monitoring, or alerting.
-- `docs/Bill KBs/BILL_KB_00_Index.md` — consult for Stripe integration, subscription webhooks, plan gating, customer portal, trials, or billing lifecycle.
-- `docs/AI KBs/AI_KB_00_Index.md` — consult for Claude API integration, prompt caching, RAG with pgvector + Voyage embeddings, streaming UI in Next.js, tool use, MCP servers, agents (Claude Agent SDK), or evals.
-
-**Manual verification:**
-- `docs/smoke-tests-pending.md` — single source of truth for outstanding manual smoke tests (stable IDs). When asked about ship-readiness or "what's left to verify," point here; do not re-list tests in commits or PRs.
-
-## Current Phase
-Phase 1 — [Name TBD] (Not Started)
-
-## Patterns
-[Leave empty — patterns emerge during development and get documented here]
-
-## Preferences
-[Populate from Phase 5: response style, autonomy level, things to avoid]
-
-## Custom Commands
-All commands live in `.claude/commands/`.
-
-| Command | Purpose |
-|---------|---------|
-| `/kickoff` | Discovery session — run first on any new project |
-| `/brainstorm` | Deep research before committing to an approach |
-| `/orchestrate` | Full workflow — investigate → plan → implement |
-| `/implement` | Execute a validated plan (parallel agents + post-batch audit) |
-| `/plan-review` | Gap analysis on a spec doc before implementing |
-| `/ship` | Update KBs, commit, push |
-| `/audit-code` | Review code/plans for elegance, reuse, security |
-| `/audit-full` | Full security audit (code + DB access + infrastructure) |
-| `/gen-test` | Generate tests following project patterns |
-| `/gen-migration` | Generate database migrations (SQL databases) |
-| `/gen-component` | Generate UI components |
-| `/visualize` | Generate ASCII diagrams |
-
-## DO NOT
-[Empty — add hard constraints as they're discovered during development]
-
----
-*Built with [Insynq's Framework](https://github.com/Insynq/claude-app-blueprint) — a methodology-first project template for building applications with AI coding agents. Learn more at [insynqk.com](https://insynqk.com).*
-```
+**After editing, verify:** re-read `CLAUDE.md` and confirm (a) no framework-owned section changed, and (b) no `[TODO]` markers remain except in `## Environment` (only if `/preflight` hasn't run — say so out loud if that's the case). If either check fails, fix before moving on.
 
 ---
 
@@ -545,6 +476,7 @@ type: user
 **Escalation threshold:** [What Claude must always ask before doing — e.g., "ask before any schema change", "ask before deleting anything", "ask before touching auth"]
 **Code opinions:** [Any strong preferences about style or approach]
 **Things to avoid:** [Specific patterns or behaviors the user doesn't want]
+**Glossary:** [Evaluative terms and what they mean here — e.g., "done", "clean", "accessible", "production-ready", "good enough" — so task descriptions and audit/dispatch decisions interpret consistently]
 ```
 
 ---
