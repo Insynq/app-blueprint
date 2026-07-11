@@ -54,6 +54,34 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.4.0] - 2026-07-11
+
+Third agent→app sister-framework port: the **agent-blueprint v0.7 intake** — 18 surviving findings from a 74-agent mixed-model review (7 gap-finders → 30 candidates → 22 deduped → 3-lens judge panels → 18 survivors) applied as 26 edit blocks + 3 citation repoints across 18 files, spec at `docs/agent-blueprint-v07-intake-spec.md` (LOCKED 2026-07-10, internal — excluded from adopter installs) `[relayed from the intake workflow run]`. Applied by 4 disjoint-ownership workers in two waves; all five Phase 8 integration checks passed against the working tree `[verified: Phase 8 record in docs/plans/agent-blueprint-v07-intake/phase-plan.md]`.
+
+**Provenance discipline (per the spec's convention):** every ported prose change ships flagged `Installed 2026-07-10, not yet proven in a live run` unless receiving-side field evidence is cited. `/stress-test`'s first live invocation is its calibration run.
+
+### Added
+
+- **`.claude/commands/stress-test.md` — new `/stress-test` command** (F1.1). Adversarial judge panel: N parallel judges, each locked to one adversarial lens, stress a large, canonical, or multi-agent change set; verdicts returned un-applied and severity-ranked — the PM decides. Composes with `/audit-code` and `/plan-review` rather than replacing them. Companion G-20 disjoint-ownership rule lands in `/implement` (F1.2). Listed in the CLAUDE.md Auditing table.
+- **Falsifiable-plan (wargame) discipline** in `/plan` + `/implement` + `docs/MULTI_AGENT_WORKFLOW.md` (Section A): every plan step carries **Expected Observations** and **Abort conditions**, and closes under an `[EDIT]` / `[RUN]` / `[DECIDE]` closure tag; a zero-`[RUN]` plan must carry an explicit justification (A3.1); `/implement` consumes the tags — workers verify against the plan's expected observations, and an observation outside them is an abort signal, not a "close enough".
+- **Lockdown-gate sharpening** in `/plan-review` + `/orchestrate` (Section B): a `[VERIFY…]` ledger in §3a (claims verified against the live artifact, earned vs. assumed), fork-trigger exclusions in Step 6a, upstream-unresolved-forks-block-lock, and a blind-executability gate — LOCKED means a fresh-context worker can execute without re-deriving intent.
+- **`docs/Supabase Structure KBs/SB_KB_13_Denormalized_Cache_Discipline.md` — new KB** (Section C): a second in-database copy of a fact is sanctioned only as a named cache over a single canonical source; paired CLAUDE.md **DO NOT** bullet so every session inherits the constraint.
+- **`docs/LESSONS.md` first three entries** (Section D): `[PROCESS-1]` consumed-verbatim artifacts are tools, not prose — compress around them; `[PROCESS-2]` the co-load test separates deliberate cross-context reinforcement from same-context bloat; `[PROCESS-3]` verify claims against the live artifact at plan-review time — authored to close what turned out to be THREE dangling `[PROCESS-1]` citations (`plan-review.md`, `brainstorm.md`, `plan.md` — the spec's D-1 counted two; two workers independently found the third), all repointed to the now-real entry.
+- **SOFT/HARD enforcement tags** in `/audit-code` + `/audit-rls` (E2): acceptance criteria mark whether a gate blocks (`HARD`) or advises (`SOFT`), so audit verdicts can't silently treat advisory prose as satisfied blocking gates.
+- **Git-tracked-ledger ship gate** (G-15): `docs/smoke-tests-pending.md` header now asserts the file must stay git-tracked (an untracked readiness ledger runs green locally and never travels with the repo), and `/ship`'s smoke-gate verifies it via `git ls-files`.
+- Safety-prose reinforcements: OBS_KB_5 BLOCKED corollary (E1.1), `docs/AUTHORING_COMMANDS.md` §6 command-authoring caveats, user-facing-copy spec convention, and SB/UI index rows for the new KB surfaces (G1).
+
+### Changed
+
+- `CLAUDE.md`: DO NOT section gains the denormalized-cache constraint (first real entry); Auditing command table gains `/stress-test`.
+- `.framework-manifest.json`: `docs/agent-blueprint-v07-intake-spec.md` enumerated under `excluded` (internal spec, never ships to adopters — same treatment as the v0.6 spec).
+
+### Migration Notes
+
+- **`CLAUDE.md` is hybrid (sibling on update):** the DO-NOT denormalized-cache bullet and the `/stress-test` table row arrive as `CLAUDE.md.framework` — merge by hand.
+- **`docs/LESSONS.md` and `docs/smoke-tests-pending.md` are living project docs:** adopters who already populated them should merge the `[PROCESS-1/2/3]` entries and the git-tracked-ledger header sentence rather than overwrite.
+- All ported disciplines ship `Installed 2026-07-10, not yet proven in a live run` — the first run that exercises the falsifiable-plan tags, the `[VERIFY…]` ledger, or `/stress-test` is calibration data; capture how it behaved.
+
 ## [0.3.0] - 2026-07-09
 
 Second agent→app sister-framework port: the **agent-blueprint v0.6 intake** — 13 ADOPT items applied as 25 edit blocks across 16 files (incl. the new `/triage` command), 7 items parked with explicit promotion triggers, spec at `docs/agent-blueprint-v06-intake-spec.md` (LOCKED 2026-07-07, internal — excluded from adopter installs). Application: 16 workers, each independently validated (16/16 pass, zero fix rounds), then stress-tested by a 6-judge mixed Opus 4.8 + Fable 5 panel whose 6 findings (1 blocking, 1 major, 4 minor) were all fixed before this release `[relayed from the intake workflow run]`. Also ships the **kickoff CLAUDE.md fill-in-place refactor**, closing a template-drift class the judge panel caught.

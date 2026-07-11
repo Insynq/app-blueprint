@@ -264,6 +264,19 @@ docs/plans/auth-rework/
 - [What NOT to touch]
 - [Scope boundaries]
 
+## Expected observations & failure signals
+(Include only at Complexity ≥ Medium; Low-complexity plans may omit — same gate as `/plan`.)
+For each step with a non-obvious failure mode (not mechanically every step):
+- **Expected observation** — an artifact, output, or state you can point at.
+- **Most-likely failure** — the most probable failure, its signal, and the counter-move.
+- **Fork-trigger (only for a real branch)** — "if you observe X, take route B": observable trigger + both routes pre-designed here.
+Keep these judgment-based, NOT hard-coded if/then trees.
+
+## Abort conditions
+(Include only at Complexity ≥ Medium; Low-complexity plans may omit — same gate as `/plan`.)
+- **Blocked — escalate/stop:** inventing a required input, mutating the wrong target, or crossing a real guardrail. Name these; on hit, stop and flag — do NOT improvise.
+- **Friction — push through:** named transient obstacles (retries, noisy output, recoverable errors) that are NOT reasons to stop. Name them so the executor doesn't over-stop.
+
 ## Granular audit
 [Worker fills this in during Phase 5 — file:line specifics, edge cases, integration risks]
 
@@ -282,7 +295,7 @@ docs/plans/auth-rework/
 
 **Lifecycle:**
 
-- Created by PM in Phase 4 with skeleton + Task / Files / Constraints filled in.
+- Created by PM in Phase 4 with skeleton + Task / Files / Constraints (plus Expected observations & Abort conditions at Complexity ≥ Medium) filled in. **Blind-executability gate before dispatch:** could the worker run this doc end-to-end without asking a single question? Every question you can anticipate is a missing decision or fork-trigger — resolve it into the plan now. Installed 2026-07-10, not yet proven in a live run.
 - Worker fills Granular audit + Recommendations in Phase 5.
 - PM fills PM annotations in Phase 6.
 - Worker fills Implementation log + Completion notes in Phase 7.

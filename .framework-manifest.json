@@ -78,6 +78,7 @@
       "bin/",
       "docs/AUDIT_FINDINGS.md",
       "docs/agent-blueprint-v06-intake-spec.md",
+      "docs/agent-blueprint-v07-intake-spec.md",
       "docs/verification-discipline-adoption-spec.md",
       "lib/",
       "package-lock.json",

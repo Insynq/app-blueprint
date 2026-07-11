@@ -50,7 +50,7 @@ All recommendations must fit the existing project. Don't introduce patterns that
 - What components/files are involved?
 - Are there existing patterns to follow?
 - What constraints apply?
-- **Earned vs. assumed scope-out:** For every "out of scope," "existing behavior preserved," or "verifiable later" assumption, classify it. Earned = "I confirmed X works." Assumed = "I couldn't confirm X — building anyway." Mark every assumed scope-out as a dependency that must be verified before or during implementation. See `docs/LESSONS.md` `[PROCESS-1]`.
+- **Earned vs. assumed scope-out:** For every "out of scope," "existing behavior preserved," or "verifiable later" assumption, classify it. Earned = "I confirmed X works." Assumed = "I couldn't confirm X — building anyway." Mark every assumed scope-out as a dependency that must be verified before or during implementation. See `docs/LESSONS.md` `[PROCESS-3]`.
 - **Provenance of superseded work:** If this plan replaces or is inspired by prior work — an open or abandoned PR, a stale branch, or an existing implementation already in the codebase (e.g. an item routed here from `/triage`) — link every inspiring artifact and locate where the current code lives *before* proposing the replacement. This is distinct from the reuse search in Step 2: reuse finds code to build on; provenance names and reads the specific artifact this plan supersedes, so you don't re-litigate solved decisions or lose working edge-case handling. Don't design a rewrite in a vacuum when the code it replaces already ships.
 
 ### 2. Identify Affected Areas
@@ -74,6 +74,14 @@ Each step should be:
 - **Atomic** — can be completed and verified independently
 - **Ordered** — dependencies respected
 - **Specific** — exact file and change described
+- **Closure-owner tagged** — every step heading carries exactly one inline tag naming who can close it and how (below). This makes it structurally impossible to fool yourself that behavior is validated by editing files.
+
+**Closure-owner tags (required on every step).** Prefix each step heading with one of:
+- **`[EDIT]`** — the agent closes this by changing repo files. Done when the diff lands.
+- **`[RUN]`** — live validation only the user can perform (a real end-to-end exercise against the running app). **Can NEVER be closed by editing.** Every `[RUN]` step must also be written into `docs/smoke-tests-pending.md` with a stable ID, so the true-closure signal lives on the committed ship-gate ledger, not in this plan.
+- **`[DECIDE]`** — a strategy/architecture call not blocking the near-term edits. Maps to the scope-graduation gate (`CLAUDE.md` → verification & safety disciplines): a `[DECIDE]` gating a prod-mutating action must be resolved before that action, not silently carried. **If it is architecturally upstream** — it reshapes downstream work, so deciding it late forces re-architecture — flag it **decide-early** and surface it in `/plan-review` Step 6. A "decide early" label is not a decision.
+
+**Closure-owner classification rule (no loophole).** Any step whose success claim depends on *runtime behavior* — the running app actually doing the thing (a migration taking effect, an email sending, a webhook firing, a role gate actually blocking) — MUST be `[RUN]`. "The diff landed" NEVER closes a behavior claim; only an observed live exercise does. A plan for behavior-changing work with **zero `[RUN]` steps is a red flag** — justify it in one line ("why does nothing here require live validation?") or a behavior step is mis-tagged `[EDIT]`.
 
 ## Output Format (Required)
 
@@ -105,17 +113,25 @@ Each step should be:
 
 ### Implementation Steps
 
-#### Step 1: [Description]
+#### Step 1: [EDIT] [Description]
 **File:** `path/to/file.ts`
 **Change:** [What to change]
 **Why:** [Reason for this change]
 
-#### Step 2: [Description]
+#### Step 2: [RUN] [Description]
 **File:** `path/to/file.ts`
 **Change:** [What to change]
 **Why:** [Reason]
+**Smoke-test ID:** [<SECTION>-<N> — mirrored into docs/smoke-tests-pending.md]
 
 [Continue for all steps...]
+
+### Expected Observations & Failure Signals (Complexity ≥ Medium)
+For each step with a non-obvious failure mode (not mechanically every step), in one or two lines:
+- **Expected observation** — exactly what you should see if the step worked: an artifact, output, or state you can point at (a migration applied, `gen types` regenerated, an RLS query returning the expected rows, a component rendering, a Playwright assertion green).
+- **Most-likely failure** — the single most probable way it goes wrong, the signal that shows it, and the counter-move.
+- **Fork-trigger (only if a real branch exists)** — "if you observe X, take route B": an observable trigger plus BOTH routes designed here, never a bare judgment call left dangling.
+Omit for Low-complexity plans (see the Complexity marker below). Keep these as judgment-based signals, NOT hard-coded if/then trees.
 
 ### Testing Checklist
 - [ ] **Happy path** — the primary use case works end-to-end
@@ -127,6 +143,10 @@ Each step should be:
 
 ### Rollback Plan
 1. [How to undo if something goes wrong]
+
+### Abort conditions (Complexity ≥ Medium; Low-complexity plans may omit)
+- **Blocked — escalate/stop:** conditions where continuing would invent a required input (one whose invention changes a persisted or irreversible outcome — a row written, the wrong target mutated), or cross a real guardrail. Name them; on hit, stop and flag — do NOT improvise.
+- **Friction — push through:** expected obstacles (transient errors, retries, noisy output) that are NOT reasons to stop. Name them so the executor doesn't over-stop.
 
 ### Risks
 | Risk | Likelihood | Mitigation |

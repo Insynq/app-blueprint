@@ -227,7 +227,7 @@ When any option adds columns to a database table:
 10. **Flag if already exists** — If the feature is already built, say so immediately
 11. **Don't implement** — Research and synthesize only
 12. **Audit explicit selects** — When adding DB columns, find all queries that need updating
-13. **Earned vs. assumed scope-out** — For any option that says "builds on existing X" or treats a foundation as given, verify X actually behaves the way the option assumes. If you couldn't verify it, flag the option as depending on an unverified foundation rather than recommending it as solid ground. "I couldn't find evidence it's broken" is not the same as "I confirmed it works." See `docs/LESSONS.md` `[PROCESS-1]`.
+13. **Earned vs. assumed scope-out** — For any option that says "builds on existing X" or treats a foundation as given, verify X actually behaves the way the option assumes. If you couldn't verify it, flag the option as depending on an unverified foundation rather than recommending it as solid ground. "I couldn't find evidence it's broken" is not the same as "I confirmed it works." See `docs/LESSONS.md` `[PROCESS-3]`.
 14. **Tag the provenance of carried claims** — Every Explore-digest claim that lands in an option carries `[verified: …]` or `[relayed: …]`; never harden a hedge, and never let an option's confidence exceed the strongest caveat behind it (see Phase 2 → Provenance discipline).
 ```
 

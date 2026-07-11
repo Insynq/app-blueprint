@@ -35,6 +35,8 @@ Claude should load the specific file(s) relevant to the task at hand. Do not loa
 - Reviewing code for accessibility issues → `UI_KB_10`, `UI_KB_12`
 - Starting a new page layout → `UI_KB_4`, `UI_KB_7`
 
+**User-facing copy in specs:** exact strings on user-facing surfaces (errors, onboarding, billing/consent, empty states) are locked spec content, not build-time decoration — see the copy-locking spec convention gated by `/plan-review` §3a (reading level, never-say list, verbatim copy with rationale).
+
 ---
 
 ## Stack Assumptions (apply to all files)

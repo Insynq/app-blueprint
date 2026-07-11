@@ -29,6 +29,7 @@ These files are for Claude. Principles-only docs fail at implementation time. Ev
 | `SB_KB_10_Branded_Email_Resend.md` | Per-tenant email branding, BYOD domain via Resend API, Auth Send Email Hook | 🔒 Stack-locked: Resend + Supabase Auth Hook |
 | `SB_KB_11_Phase_Locking_Progress.md` | Computed phase state, live vs materialized progress, retroactive items | ✅ Portable (Postgres) |
 | `SB_KB_12_RLS_Performance.md` | InitPlan idiom, indexing for RLS, DEFINER helpers, consolidated policies | ✅ Portable (Postgres RLS internals) |
+| `SB_KB_13_Denormalized_Cache_Discipline.md` | The one sanctioned duplicate: named cache over a single canonical source, three-condition rule | ✅ Portable (Postgres) |
 
 ---
 
@@ -51,6 +52,7 @@ These files are for Claude. Principles-only docs fail at implementation time. Ev
 - Delete compliance documents — supersede and archive instead
 - Use `REFRESH MATERIALIZED VIEW` (non-concurrent) in production under read load
 - Use Postgres Changes for multi-tenant fan-out at scale — use Broadcast
+- Store the same fact in two columns/tables with no declared canonical owner — a denormalized copy is sanctioned only as a named cache written from canonical with a fan-out sweep or a display-only declaration (see `SB_KB_13`)
 
 ---
 

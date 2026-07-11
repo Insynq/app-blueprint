@@ -64,6 +64,7 @@ Read the plan file and extract:
 - Files to create (NEW)
 - Files to modify (MODIFY)
 - Dependencies between steps (what must be done before what)
+- The plan's **Expected Observations & Failure Signals** and **Abort conditions** sections, when present (Complexity ≥ Medium plans carry them): per step, the observation that confirms it worked, any named fork-triggers, and the conditions that mean stop-and-escalate vs. push-through.
 
 If the plan cannot be found, STOP and report: "Could not find plan. Please provide the plan file path or run /orchestrate first."
 
@@ -83,6 +84,7 @@ Group steps into batches that can be executed:
 
 **Batch rules:**
 - Steps within a batch have NO dependencies on each other
+- **No two parallel steps in a batch share a file** — every file in a parallel batch has exactly one owner. Concurrent implementers writing the same file collide and silently clobber each other; if two steps must touch one file, sequence them (see "Conflicting changes" recovery below).
 - Each batch completes before the next starts
 - Database migrations are ALWAYS in their own batch (batch 1)
 - Edge functions / API routes can be parallel with each other but after migrations
@@ -173,6 +175,8 @@ Skip this only if (a) the file is being CREATED fresh, or (b) you have already r
 
 Wait for ALL parallel agents to complete before moving to the next batch.
 
+**Confirm each step against its Expected Observation (when the plan carries one).** Before advancing past a step, point at the artifact/output/state the plan named — the edit or agent returning "success" is not the observation. On a named fork-trigger, take the route the plan already designed. On an Abort condition, stop and flag — do NOT improvise past it. Report only work you can cite observed evidence for, never a self-reported "done."
+
 ### 4d: Post-Batch Verification
 
 After each batch completes, run a type check using the project's available command:
@@ -234,6 +238,7 @@ If the build fails:
 - Build: ✅ Clean / ⚠️ [N] errors
 
 ### Remaining Issues (if any)
+- **Expected-observation confirmation:** for every implemented step that carried an Expected Observation (Complexity ≥ Medium plans), the report states the observation was confirmed to *hold* — not merely that the step ran. Any step whose observation could not be confirmed is listed here as a remaining issue, not silently passed.
 - [Issue description and suggested fix]
 
 ### Next Steps
@@ -260,7 +265,7 @@ If the build fails:
 - **File doesn't exist** — If a file to modify doesn't exist, check if the plan has the wrong path. Search for it with Glob. If truly missing, report it.
 - **Type errors after edit** — Usually a missing import or wrong type name. Fix the specific error, don't refactor.
 - **Plan is ambiguous** — If the plan says "add X" but doesn't specify where, read the file and find the most logical location based on the surrounding code.
-- **Conflicting changes** — If two batch items would modify the same line, implement them sequentially instead of parallel.
+- **Conflicting changes** — If two batch items would modify the same file, implement them sequentially instead of parallel.
 ```
 
 ---

@@ -248,6 +248,8 @@ Medium/Low/style/over-engineering rows are NOT refuted — they ride the auditor
 
 Each refuter returns, per finding, **CONFIRMED** (tried and failed to kill it — quote the empty/contrary search) · **OVERSTATED** (real but narrower/lower-severity — cite the narrowing evidence) · **REFUTED** (contradicted — cite the killing `file:line`), with a confidence. Record a **Refutation Ledger** (ID | Finding | Refuter verdict | Confidence | Refuting/weakening evidence) that supersedes the binary checkbox.
 
+**Enforcement-class tag (SOFT vs HARD).** For each security-relevant rule the change relies on, note in the ledger whether it is **HARD** (host/DB-enforced and unbypassable — an RLS policy, a constraint, a signature check) or **SOFT** (enforced only by application behavior — a client-side filter, a "callers always validate" assumption). SOFT binds just as much and warrants more scrutiny; flag any guarantee resting on a SOFT check where a HARD one is available (see `/audit-rls` for the full rubric).
+
 **Cost escape-hatch (BLOCKER).** If the load-bearing set spans more than ~3–4 distinct security-class categories, do **not** spawn unbounded refuters — **halt and escalate the audit itself** to the user ("this change has a security-class surface too broad to refute cheaply — it needs a scoped re-audit / redesign"). An audit that can't be refuted cheaply is itself the finding.
 
 **Split-verdict escalation.** When a load-bearing finding accumulates multiple independent verdicts

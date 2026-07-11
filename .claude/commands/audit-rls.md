@@ -187,6 +187,8 @@ The auditor's `PASSED`/`NEEDS CHANGES` checkbox is that subagent's **self-report
 
 Each refuter returns, per finding, **CONFIRMED** · **OVERSTATED** · **REFUTED** with a confidence and quoted SQL. Record a **Refutation Ledger** (Table | Policy | Refuter verdict | Confidence | Quoted SQL) that supersedes the binary checkbox.
 
+**Enforcement-class tag (SOFT vs HARD).** For each access rule the spec or code relies on, label its enforcement: **HARD** = host/DB-enforced and unbypassable (an RLS policy, a `CHECK` constraint, a `SECURITY DEFINER` boundary), or **SOFT** = enforced only by application behavior (a client-side filter, a "the UI never shows this" assumption, a service-role query that trusts its caller). The label classifies *enforcement, not bindingness* — a SOFT rule binds exactly as much, and demands MORE care because nothing but the code stands between it and a breach. Flag any data-isolation guarantee resting on a SOFT check where a HARD one (RLS) is available: a client filter presented as tenant isolation is a promise dressed as a wall.
+
 **Cost escape-hatch (BLOCKER).** If the load-bearing set spans more than ~3–4 distinct security-class categories, **halt and escalate the audit itself** rather than spawning unbounded refuters — a policy surface too broad to refute cheaply needs a scoped re-audit.
 
 **Mechanical tally:**

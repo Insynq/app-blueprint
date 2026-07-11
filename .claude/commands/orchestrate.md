@@ -110,7 +110,7 @@ Run `/audit-code` against the holistic plan. Update phase-plan.md with audit fin
 
 For each worker slice in the plan:
 
-1. Create `docs/plans/[phase-slug]/worker-N-[task-slug].md` using the structure from [MULTI_AGENT_WORKFLOW.md → Worker plan docs](../../docs/MULTI_AGENT_WORKFLOW.md#worker-plan-docs). Fill in: Task, Files involved, Constraints / non-goals. Leave the audit / recommendations / PM annotations / implementation log sections as stubs.
+1. Create `docs/plans/[phase-slug]/worker-N-[task-slug].md` using the structure from [MULTI_AGENT_WORKFLOW.md → Worker plan docs](../../docs/MULTI_AGENT_WORKFLOW.md#worker-plan-docs). Fill in: Task, Files involved, Constraints / non-goals (plus Expected observations & Abort conditions at Complexity ≥ Medium — see MULTI_AGENT_WORKFLOW.md worker-doc skeleton). Leave the audit / recommendations / PM annotations / implementation log sections as stubs. **Blind-executability gate (before dispatch):** could the worker run this brief end-to-end without asking a single question? Every anticipated question is a missing decision or a missing fork-trigger — resolve it into the plan now.
 
 2. Add a link to the worker doc in `phase-plan.md` under "Worker plan docs".
 

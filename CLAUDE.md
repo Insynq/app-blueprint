@@ -113,6 +113,7 @@ All commands live in `.claude/commands/`. On a fresh clone, run `/preflight` the
 | `/audit-code` | Review code/plans for elegance, reuse, anti-patterns, security |
 | `/audit-rls` | Scan DB access policies for security gaps (SQL databases) |
 | `/audit-infra` | Audit infrastructure — headers, dependencies, environment, CORS |
+| `/stress-test` | Adversarial judge panel — N parallel lens-locked judges stress a large, canonical, or multi-agent change set; verdicts un-applied, PM decides |
 
 ### Database
 | Command | Purpose |
@@ -135,4 +136,5 @@ All commands live in `.claude/commands/`. On a fresh clone, run `/preflight` the
 - Always update CLAUDE.md phase status when updating other KBs.
 
 ## DO NOT
-[Empty — add hard constraints as they're discovered during development]
+- Denormalized copies inside the database silently diverge once a separate write path touches one. A second copy of a fact is sanctioned only when shaped as a named cache over a single canonical source — see `docs/Supabase Structure KBs/SB_KB_13_Denormalized_Cache_Discipline.md` for the only allowed form.
+[Add additional project-specific hard constraints as they're discovered during development]

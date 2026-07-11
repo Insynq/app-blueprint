@@ -19,4 +19,5 @@
 
 ## Changelog
 <!-- Format: Phase X.Y — Description ✅ -->
+- agent-blueprint-v07-intake — v0.4.0: falsifiable-plan discipline, lockdown-gate sharpening, `/stress-test`, SB_KB_13, LESSONS [PROCESS-1/2/3], SOFT/HARD audit tags, git-tracked-ledger ship gate ✅
 [TODO — collapse completed phases to 2–3 line summaries. Full history lives in git.]

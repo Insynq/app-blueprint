@@ -153,6 +153,11 @@ Shorter commands are followed more reliably. Keep the body focused on the proced
 reference material into a KB and link to it. If a command has grown to cover several distinct jobs,
 that's a signal to split it.
 
+**Two things resist compression — know them before you cut:**
+
+- **A consumed-verbatim artifact is a tool, not prose.** Paste-ready seed prompts, worker-prompt templates, structured-output/emit templates, and executable command blocks are *pasted or run verbatim* by a consumer — their apparent redundancy with the explanation around them IS the design (the body teaches *why*; the artifact is the thing that runs). Compress the explanation; leave the artifact whole. Collapsing it to a pointer forces a downstream consumer to reconstruct a contract from prose. (app-blueprint `[PROCESS-1]`.)
+- **A duplicated rule passes the co-load test or it's bloat.** A rule appearing in more than one place is deliberate reinforcement only if its copies fire in contexts where the others are absent. If two copies always enter context together (same file, same prompt) → one is bloat, reduce to a pointer. If they live in independently-loaded contexts (separate command files that are distinct entry points, or a fresh-subagent prompt that ships to a context the parent never shares) → keep every copy inline, because a cross-context pointer only fires if the agent follows it. (app-blueprint `[PROCESS-2]` — e.g. the Refutation Pass duplicated across `audit-code` / `audit-rls` / `audit-full` is legitimately inline, each being a standalone entry point.)
+
 ---
 
 ## 7. Discipline commands (Iron-Law style)

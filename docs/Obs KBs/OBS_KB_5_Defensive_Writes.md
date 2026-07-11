@@ -54,6 +54,8 @@ When a write or side-effect fails, there are exactly **two safe responses**, and
 
 This restates, as an authoring rule, the cross-cutting **OBS index** guidance already in force: *"Capture errors at the boundary … Never silently swallow inside business logic"* and *"Re-throw after `captureException` in background-job catch blocks."* OBS_KB_5 names the failure mode those rules prevent.
 
+**The BLOCKED corollary — never invent a required input.** Not every unverified assumption is safe to proceed under; classify before you act. A **required** input is one whose invention would change a *persisted or irreversible* outcome — the row that gets written, the target that gets mutated, the email that sends. When a required input is unresolved, the task is **BLOCKED**: log the *exact* missing input, stop, and escalate. Inventing it is prohibited — a guessed required input is a silent-open failure. A **soft** assumption is a stateable default you can proceed under and surface for correction. The test: *would inventing this change a persisted or irreversible outcome?* Yes → required → BLOCKED. No → soft → proceed-and-surface. Agents fabricate missing inputs to satisfy an output-format instruction rather than escalate the gap; the fail-loud BLOCKED path is what stops the fabrication. Installed 2026-07-10, not yet proven in a live run.
+
 ---
 
 ## Cross-cutting rules (mirror into the Obs / Job indexes)

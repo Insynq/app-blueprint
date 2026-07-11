@@ -79,7 +79,11 @@ Two supporting rules:
 
 For every flagged item: either VERIFY now (and mark as earned in your findings) or list it as a **GAP** or **RISK** that implementation depends on. Pause cost is almost always less than retrofit cost.
 
-See `docs/LESSONS.md` `[PROCESS-1]` for the full incident behind this rule.
+See `docs/LESSONS.md` `[PROCESS-3]` for the full incident behind this rule.
+
+**In-spec verification ledger (`[VERIFY…]` tags).** A well-formed spec carries its own verification ledger inline: every host-capability or environment claim it leans on — a Supabase feature is enabled, an env var is set on the target, an extension is installed, an edge function is deployed — is tagged `[VERIFY per env]` / `[VERIFY BEFORE SHIPPING]` at the point of use, and each is resolved against the real project before lockdown. **A resolution must carry its evidence:** rewrite in place as `[RESOLVED: checked <what> on <where>]` (claim held) or `[RESOLVED, corrected: …]` (claim was wrong, here's the truth). A bare `[RESOLVED]` with no how-verified note is unfalsifiable and counts as UNRESOLVED in the Step 6 check. When you see an untagged environment claim, flag it and recommend a `[VERIFY…]` tag; an unresolved `[VERIFY…]` blocks lock.
+
+**User-facing copy is locked spec content, not decoration.** When a spec touches user-facing surfaces — error messages, onboarding, billing/consent copy, empty states — the exact words ARE the implementation; they are not to be paraphrased at build time. A well-formed spec pins three things and treats them as locked content: (1) a concrete **reading level** (e.g. "8th-grade / plain English"); (2) a **never-say list** — machinery terms that must never surface to users (`API`, `schema`, `JSON`, `OAuth`, `RLS`, `sync`, "database"); (3) **verbatim copy with per-phrase rationale** — the literal strings, each annotated with why that wording. An unresolved wording fork on a user-facing surface blocks lockdown the same as any other unresolved decision (Step 6).
 
 ### 3b: Missing Pieces
 - Does the spec reference fields/types/components that don't exist and aren't in the creation plan?
@@ -155,6 +159,7 @@ Grep the spec for textual signals that a fork was raised but not closed:
 - ` or ` between architectural alternatives (e.g., "use approach A or B")
 - `(a)/(b)/(c)`, `(1)/(2)/(3)` enumerations without a confirmed pick
 - Phrases like `open decision`, `unresolved`, `to be determined`, `TBD`, `revisit`, `figure out later`
+- `[VERIFY…]` tags — `[VERIFY per env]`, `[VERIFY BEFORE SHIPPING]`, or any `[VERIFY …]` variant (see §3a). An unresolved `[VERIFY…]` is an environment claim the spec hasn't checked against the real project; it blocks lock. It is closed only by rewriting it in place with an evidence-bearing note — `[RESOLVED: checked <what> on <where>]` or `[RESOLVED, corrected: …]`. A **bare `[RESOLVED]` with no how-verified note counts as UNRESOLVED**, and deleting the tag without a resolution note does not close it either.
 
 For each match: confirm there's an adjacent decision (in the decisions table, an inline "decided: X" annotation, or a step's `**Why:**` field) closing the fork. If none, list it as **UNRESOLVED**.
 
@@ -164,6 +169,10 @@ For each match: confirm there's an adjacent decision (in the decisions table, an
 - The match sits inside a backtick-delimited inline code span (`` `[TODO decision]` ``) — same reason.
 - The match is in a paragraph that describes Step 6 itself, or documents the fork-detection patterns (e.g., a sentence enumerating the patterns to scan for). That's commentary, not content.
 - The match is inside a "Resolved decisions" or post-release "revisit triggers" section (`"revisit if X happens"`, `"revisit in a later release"`) — those are deliberate future milestones, not unresolved forks within this release's scope.
+- The match is an **execution-time fork-trigger** ("if you observe X, take route B" — a deliberately retained runtime branch), not the design-time fork Step 6 exists to resolve. Such a fork-trigger is legitimate (not UNRESOLVED) **IFF all three hold**: (a) it names an **observable trigger**; (b) **both routes are fully pre-designed** — the plan defers WHICH route runs, never the DESIGN of a route; and (c) the observable is **runtime-evaluable without making the deferred choice**. A branch failing any leg — a bare "maybe A or B", or a named-but-undesigned route B — is still UNRESOLVED. (This ties to the per-step Expected Observations element `/plan` emits at Complexity ≥ Medium, where legitimate fork-triggers originate.)
+- The match is a **genuinely-deferrable open item** parked in the spec's Deferred / Out-of-Scope section under **"Genuinely deferrable"** *and* carrying a recorded why-safe-to-sit rationale (nothing downstream depends on it this release). A properly-justified deferrable is a decision, not an omission — do not false-flag it.
+
+**Upstream forks DO block (the inverse rule).** An open design fork classified as **architecturally upstream** — it reshapes downstream work, so delaying it is expensive — is UNRESOLVED whenever it lacks a recorded decision, even if the spec files it under "deferred." Specifically: any open fork that would force a re-architecture if decided late blocks lock regardless of which section it sits in. **A "decide early" label is not a decision** — a fork marked "decide early — it shapes the architecture" yet carried unresolved across releases is exactly the failure this catches. Flag such items as UNRESOLVED and name them in the FAIL list.
 
 A match qualifies as **UNRESOLVED** only when it represents an actual decision *in this spec's content* that has no corresponding closure.
 
