@@ -7,7 +7,7 @@
   "homepage": "https://github.com/Insynq/app-blueprint",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Insynq/app-blueprint.git"
+    "url": "git+https://github.com/Insynq/app-blueprint.git"
   },
   "bugs": {
     "url": "https://github.com/Insynq/app-blueprint/issues"
@@ -22,7 +22,7 @@
     "slash-commands"
   ],
   "bin": {
-    "app-blueprint": "./bin/init.js"
+    "app-blueprint": "bin/init.js"
   },
   "files": [
     "bin/",
