@@ -123,7 +123,7 @@ Ask in sequence:
    **Adapt downstream based on the answer:**
 
    - **Operational web app / SaaS / Internal tool / Marketing site** — these are "UI applications." Continue with questions 2–5 as written below. Phase 4's pattern checklist applies in full.
-   - **API / library / CLI tool** — these are "non-UI projects." Replace question 3 with: "What is the primary entry point — API endpoint, CLI command, or event trigger? Describe the core operation from input to output." Replace question 4 (mobile/PWA) with: "How will this be deployed and consumed — HTTP API, CLI binary, SDK, scheduled job?" Skip questions about screens, navigation, or user journeys. Note for later: KB_7 (UI Patterns) is not applicable.
+   - **API / library / CLI tool** — these are "non-UI projects." Replace question 3 with: "What is the primary entry point — API endpoint, CLI command, or event trigger? Describe the core operation from input to output." In Phase 4's pattern checklist, skip the *(UI apps only)* bullets (mobile/PWA and the native mobile companion) — the *(Non-UI apps only)* bullet ("How will this be deployed and consumed — HTTP API, CLI binary, SDK, scheduled job?") applies instead. Skip questions about screens, navigation, or user journeys. Note for later: KB_7 (UI Patterns) is not applicable.
    - **Game** — replace question 3 with: "Walk me through one complete play session — start screen → core loop → end state. What's the moment-to-moment gameplay?" Replace question 4 with: "What platforms are you targeting — web (browser), mobile (iOS/Android), desktop (Windows/Mac/Linux), console?" Note for later: many stack-reference KBs (Auth, Billing, RLS, Forms, Obs as written) won't apply directly. Phase 4's pattern checklist will need to be replaced with game-specific concerns (engine, asset pipeline, save state, multiplayer, monetization model, leaderboards).
    - **Research / data pipeline** — replace question 3 with: "What's the data flow — input source → transformations → output? Describe one end-to-end run." Replace question 4 with: "How is this run — interactive notebook, scheduled job, on-demand script, served as an API?" Note for later: only Obs and Test KBs likely apply; UI/Auth/Billing/Forms KBs do not.
    - **Other** — ask a clarifying follow-up to figure out the closest analog above, then adapt.
@@ -183,6 +183,7 @@ Ask in sequence:
    - Email or SMS notifications
    - Admin or operations dashboard
    - *(UI apps only)* Mobile-friendly or PWA
+   - *(UI apps only)* A native mobile companion app (iOS/Android) — now or on the roadmap? (If yes: the sanctioned shape is a separate sibling repo sharing this app's Supabase backend, ported later via /port-mobile — see docs/Mobile KBs/MOB_KB_00_Index.md. Record it as a second client target in Tech Stack; it does not change V1 web scope.)
    - *(Non-UI apps only)* How will this be deployed and consumed — HTTP API, CLI binary, SDK, scheduled job?"
 
    **For games — replace with a game-shaped checklist:**
@@ -372,7 +373,7 @@ Apply these edits, preserving everything not listed verbatim:
 1. **Title + onboarding scaffolding** — replace `# Project: [TODO — run /kickoff to populate this]` with `# Project: <App Name>`, and delete the top-of-file `⚠️ This file is unpopulated…` warning blockquote (it no longer applies once kickoff completes).
 2. **`## Environment`** — do not touch. It belongs to `/preflight`; if it still reads `[TODO]`, tell the user to run `/preflight` rather than filling it yourself.
 3. **`## Overview`** — 1–2 sentences: what this app does and for whom.
-4. **`## Tech Stack`** — bullets: frontend framework + key libraries, backend/database, auth, hosting, other services (payments, email, storage, etc.).
+4. **`## Tech Stack`** — bullets: frontend framework + key libraries, backend/database, auth, hosting, other services (payments, email, storage, etc.). If the product has (or plans) more than one client — e.g. web + a native mobile companion — list each client target as its own bullet naming its framework and repo, and name the shared backend once (see docs/Mobile KBs/MOB_KB_00_Index.md for the sibling-repo shape).
 5. **`## Build Commands`** — replace the bracketed examples with the project's real commands.
 6. **`## Roles`** — user types and hierarchy if role-based permissions apply; otherwise write "Single user type."
 7. **`## Core Entities`** — the main domain concepts the app manages (not table names yet), e.g. `- **Orders** — represent a customer purchase request`.

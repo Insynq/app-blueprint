@@ -15,3 +15,7 @@
 ## [Unreleased]
 
 [Changes pending release land here. `/ship` rewrites this section into a dated entry on each release.]
+
+## 2026-07-13 — mobile-port-intake (v0.5.0)
+
+- New `docs/Mobile KBs/` stack-reference family + `/port-mobile` orchestrator with post-port sync mode (Installed, not yet proven in a live run); `/kickoff` second-client-target declaration; KB_INDEX/CLAUDE.md/manifest wiring.

@@ -54,6 +54,29 @@ Only the canonical repo (this repo) maintains `FRAMEWORK_CHANGELOG.md`. Adopter 
 
 ---
 
+## [0.5.0] - 2026-07-13
+
+First web→native harvest: the **mobile-port-intake** — a new Mobile stack-reference KB family plus a `/port-mobile` orchestrator, field-derived from one live web→React Native/Expo port (July 2026), **iOS-validated only** (Android-adjacent claims flagged unproven). Spec at `docs/mobile-port-intake-spec.md` (LOCKED 2026-07-13, internal — excluded from adopter installs). Applied by 4 disjoint-ownership workers in two waves plus a user-granted Addendum E (post-port delta sync); all eight Phase 8 integration checks passed against the working tree, plus an independent Addendum E re-verification `[verified: Phase 8 record, docs/plans/mobile-port-intake/phase-plan.md]`.
+
+**Provenance discipline:** the core family ships flagged `Field-derived 2026-07-13 from one live web→RN port (July 2026); iOS-validated only`. The `/port-mobile` sync mode ships flagged `Installed 2026-07-13, not yet proven in a live run` — zero catch-up field runs yet.
+
+### Added
+
+- **`docs/Mobile KBs/` — new stack-reference family (the tenth):** `MOB_KB_00_Index.md` plus five KBs — `MOB_KB_1_Stack_Selection.md` (JIT stack-research method with a dated July 2026 ecosystem snapshot), `MOB_KB_2_Parity_Contract.md` (parity-contract port method + "Keeping the contract current"), `MOB_KB_3_Supabase_On_Device.md` (shared-backend Supabase on-device patterns), `MOB_KB_4_Distribution.md` (EAS/TestFlight signing and distribution), `MOB_KB_5_Gotchas_And_Verification.md` (device smokes, port gotchas).
+- **`.claude/commands/port-mobile.md` — new `/port-mobile` orchestrator:** consumes the web repo read-only and produces a NEW sibling mobile repo sharing the same Supabase backend — parity contract → stack research → locked spec → waved build → device smokes → TestFlight. Includes a post-port **sync mode** (run with `sync` after web-app changes to re-inventory the delta — inventory only, no code changes); the sync mode is `Installed 2026-07-13, not yet proven in a live run`.
+- **`/kickoff` second-client-target declaration:** the Phase 4 pattern checklist gains a native-mobile-companion question (UI apps only) — the sanctioned shape is a separate sibling repo sharing the app's Supabase backend, ported later via `/port-mobile`, recorded as a second client target in Tech Stack without changing V1 web scope; the CLAUDE.md Tech Stack fill instructions now cover multi-client products. Also fixes a pre-existing mislabel at kickoff.md:126 — the non-UI branch now points at the Phase 4 checklist's `(UI apps only)` / `(Non-UI apps only)` bullets instead of a stale question-4 replacement.
+- `docs/KB_INDEX.md`: ten-family wiring — nine→ten counts, folders list gains `Mobile KBs/` (`MOB_KB_*`), new task-table row ("Port the web app to a native mobile companion") and concern-table row.
+
+### Changed
+
+- `CLAUDE.md`: Reference Documents gains the `docs/Mobile KBs/MOB_KB_00_Index.md` consult bullet; the Orchestrators command table gains `/port-mobile`.
+- `.framework-manifest.json`: `docs/Mobile KBs/` added to framework-managed files and the conflict map (`overwrite-with-backup`); `docs/mobile-port-intake-spec.md` enumerated under `excluded` (internal spec, never ships to adopters — same treatment as the agent-blueprint intake specs).
+
+### Migration Notes
+
+- **`CLAUDE.md` is hybrid (sibling on update):** the Mobile KB consult bullet and the `/port-mobile` table row arrive as `CLAUDE.md.framework` — merge by hand.
+- The Mobile KB family is field-derived from **one** live port and **iOS-validated only** — Android-adjacent claims are explicitly flagged `unproven — no Android field run yet`. The `/port-mobile` sync mode is `Installed 2026-07-13, not yet proven in a live run`: the first post-port sync you run is calibration data — capture how it behaved.
+
 ## [0.4.0] - 2026-07-11
 
 Third agent→app sister-framework port: the **agent-blueprint v0.7 intake** — 18 surviving findings from a 74-agent mixed-model review (7 gap-finders → 30 candidates → 22 deduped → 3-lens judge panels → 18 survivors) applied as 26 edit blocks + 3 citation repoints across 18 files, spec at `docs/agent-blueprint-v07-intake-spec.md` (LOCKED 2026-07-10, internal — excluded from adopter installs) `[relayed from the intake workflow run]`. Applied by 4 disjoint-ownership workers in two waves; all five Phase 8 integration checks passed against the working tree `[verified: Phase 8 record in docs/plans/agent-blueprint-v07-intake/phase-plan.md]`.

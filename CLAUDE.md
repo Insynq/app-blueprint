@@ -51,6 +51,7 @@
 - `docs/Obs KBs/OBS_KB_00_Index.md` — consult for structured logging, error tracking, audit logs, performance monitoring, or alerting.
 - `docs/Bill KBs/BILL_KB_00_Index.md` — consult for Stripe integration, subscription webhooks, plan gating, customer portal, trials, or billing lifecycle.
 - `docs/AI KBs/AI_KB_00_Index.md` — consult for Claude API integration, prompt caching, RAG with pgvector + Voyage embeddings, streaming UI in Next.js, tool use, MCP servers, agents (Claude Agent SDK), or evals.
+- `docs/Mobile KBs/MOB_KB_00_Index.md` — consult for a native mobile companion app (React Native / Expo), web→mobile ports, Supabase on-device patterns, EAS/TestFlight distribution, or device verification.
 
 > **Note on KB numbering:** KB_1, KB_7, KB_8, KB_9 are template-provided. Numbers 2–6 are reserved for project-specific knowledge bases added during kickoff (architecture decisions, API contracts, data model, etc.). The `SB_KB_*` and `UI_KB_*` files in their own folders are stack-reference patterns and are separate from the project-state KBs.
 
@@ -86,6 +87,7 @@ All commands live in `.claude/commands/`. On a fresh clone, run `/preflight` the
 | `/adopt` | Discovery session for **existing** projects — populate KBs from observation, audit existing user KBs, merge CLAUDE.md. Run after installer + `/preflight`. |
 | `/update-framework` | Pull canonical framework updates with per-file review and assisted merge for customizations |
 | `/orchestrate` | PM phase loop — pivot → brainstorm → plan + audit → workers → reconcile → implement → smoke → ship. See `docs/MULTI_AGENT_WORKFLOW.md`. |
+| `/port-mobile` | Port the web app to a native mobile companion (React Native/Expo, sibling repo, shared Supabase backend) — parity contract → stack research → locked spec → waved build → device smokes → TestFlight; sync mode re-inventories web-app changes post-port |
 | `/audit-full` | Full security audit (code + DB access + infrastructure) in parallel |
 
 ### Planning & Review

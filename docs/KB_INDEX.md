@@ -1,13 +1,13 @@
 # KB Index — task-routing across stack-reference KB families
 
-This index sits on top of the nine **stack-reference** KB folders under `docs/`. It exists to answer one question: *"I'm about to build X. Which KB files do I read first, and in what order?"* The folders themselves are exhaustive; this file is a routing layer for tasks that genuinely span multiple families.
+This index sits on top of the ten **stack-reference** KB folders under `docs/`. It exists to answer one question: *"I'm about to build X. Which KB files do I read first, and in what order?"* The folders themselves are exhaustive; this file is a routing layer for tasks that genuinely span multiple families.
 
 Two kinds of KB live in this repo:
 
 - **Project-state KBs** (`KB_1_Architecture.md`, `KB_7_UI_Patterns.md`, `KB_8_Current_State.md`, `KB_9_Screen_Catalog.md`, `LESSONS.md`, `CHANGELOG.md`, `APP_CONCEPT.md`, `SCOPE.md`) — owned by *this* project, evolve as features ship, populated by `/kickoff` and maintained by `/ship` and `/update-kb`.
-- **Stack-reference KBs** (the nine folders below) — vetted patterns for the chosen stack (Supabase + Next.js App Router + Vercel + Resend + Stripe + Anthropic). They do not change per project; they are read-mostly. Each folder has a `*_KB_00_Index.md` (or `_0_Index`) with a file table, cross-cutting always/never rules, dependencies between files, and a `VERIFY BEFORE SHIPPING` list.
+- **Stack-reference KBs** (the ten folders below) — vetted patterns for the chosen stack (Supabase + Next.js App Router + Vercel + Resend + Stripe + Anthropic + Expo/React Native for the optional mobile companion client). They do not change per project; they are read-mostly. Each folder has a `*_KB_00_Index.md` (or `_0_Index`) with a file table, cross-cutting always/never rules, dependencies between files, and a `VERIFY BEFORE SHIPPING` list.
 
-Folders: `Supabase Structure KBs/` (`SB_KB_*`), `UI-UX KBs/` (`UI_KB_*`), `Auth KBs/` (`AUTH_KB_*`), `Job KBs/` (`JOB_KB_*`), `Test KBs/` (`TEST_KB_*`), `Form KBs/` (`FORM_KB_*`), `Obs KBs/` (`OBS_KB_*`), `Bill KBs/` (`BILL_KB_*`), `AI KBs/` (`AI_KB_*`).
+Folders: `Supabase Structure KBs/` (`SB_KB_*`), `UI-UX KBs/` (`UI_KB_*`), `Auth KBs/` (`AUTH_KB_*`), `Job KBs/` (`JOB_KB_*`), `Test KBs/` (`TEST_KB_*`), `Form KBs/` (`FORM_KB_*`), `Obs KBs/` (`OBS_KB_*`), `Bill KBs/` (`BILL_KB_*`), `AI KBs/` (`AI_KB_*`), `Mobile KBs/` (`MOB_KB_*`).
 
 For per-folder file listings and rules, open the family's `00_Index`. This file does **not** repeat them.
 
@@ -34,6 +34,7 @@ The KB to read **first** is listed first; subsequent files add depth or cross-fa
 | **Send a transactional email (magic link, invoice, trial-end)** | `SB_KB_10` → `SB_KB_6` (transactional outbox) → `JOB_KB_1` (worker + idempotency) |
 | **Build an admin dashboard (queue health, billing, audit drilldown)** | `UI_KB_8` → `OBS_KB_4` (queries) → `BILL_KB_3` (plan filters) → `OBS_KB_3` (audit reads) → `JOB_KB_1` (DLQ) |
 | **Test a feature end-to-end (the whole pyramid)** | `TEST_KB_1` (strategy) → `TEST_KB_2` (RLS) → `TEST_KB_3` (integration) → `TEST_KB_4` (component) → `TEST_KB_5` (E2E) → `TEST_KB_6` (if async) |
+| **Port the web app to a native mobile companion** | `MOB_KB_00` → `MOB_KB_2` → `MOB_KB_1` → `MOB_KB_3` → `MOB_KB_4` → `MOB_KB_5` |
 
 ---
 
@@ -52,6 +53,7 @@ When you already know which concern you're touching, skip the task table.
 | Logging, errors (Sentry), audit trails, performance, alerts | `Obs KBs/` |
 | Claude API, prompt caching, RAG, streaming, tools, agents, MCP | `AI KBs/` |
 | Test strategy, pgTAP RLS, integration, component, E2E, async | `Test KBs/` |
+| Native mobile companion (React Native / Expo), web→mobile ports, device distribution | `Mobile KBs/` |
 
 ---
 
